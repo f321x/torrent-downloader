@@ -127,6 +127,9 @@ jobs:
       run: |
         echo "::group::Installing system dependencies"
         brew update
+        brew uninstall --ignore-dependencies boost-python3 || true
+        brew uninstall --ignore-dependencies libtorrent-rasterbar || true
+        brew install boost
         brew install boost-python3
         brew install libtorrent-rasterbar
         brew install cairo
@@ -139,7 +142,7 @@ jobs:
         
         echo "Setting up libtorrent paths"
         LIBTORRENT_PATH=$(brew --prefix libtorrent-rasterbar)
-        BOOST_PATH=$(brew --prefix boost-python3)
+        BOOST_PATH=$(brew --prefix boost)
         PYTHON_VERSION=$(python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
         echo "LIBTORRENT_PATH=$LIBTORRENT_PATH"
         echo "BOOST_PATH=$BOOST_PATH"
@@ -163,14 +166,26 @@ jobs:
           brew install cmake ninja boost-build
           git clone --depth 1 --branch v2.0.9 https://github.com/arvidn/libtorrent.git
           cd libtorrent
+          
+          # Set environment variables for the build
+          export BOOST_ROOT=$BOOST_PATH
+          export BOOST_LIBRARYDIR=$BOOST_PATH/lib
+          export BOOST_INCLUDEDIR=$BOOST_PATH/include
+          export CXXFLAGS="-I$BOOST_PATH/include -std=c++17"
+          export LDFLAGS="-L$BOOST_PATH/lib"
+          
           cmake -DCMAKE_BUILD_TYPE=Release \
                 -DCMAKE_INSTALL_PREFIX=$SITE_PACKAGES \
-                -DCMAKE_PREFIX_PATH=$BOOST_PATH \
+                -DCMAKE_PREFIX_PATH="$BOOST_PATH" \
+                -DBoost_NO_BOOST_CMAKE=OFF \
+                -DBoost_NO_SYSTEM_PATHS=OFF \
+                -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 \
                 -Dpython-bindings=ON \
-                -Dboost-python-module-name=python \
+                -Dboost-python-module-name="python${PYTHON_VERSION}" \
                 -Dpython-package-dir=$SITE_PACKAGES \
                 -DPython_EXECUTABLE=$(which python) \
                 -B build
+          
           cmake --build build --parallel
           cmake --install build
           cd ..
