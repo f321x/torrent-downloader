@@ -1,0 +1,76 @@
+name: Build Application
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+        
+    - name: Generate icons
+      run: python convert_icons.py
+      
+    - name: Build Windows executable
+      run: pyinstaller torrent_downloader_win.spec
+      
+    - name: Create Windows ZIP
+      run: |
+        cd dist
+        Compress-Archive -Path TorrentDownloader -DestinationPath TorrentDownloader-Windows.zip
+        
+    - name: Upload Windows artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: TorrentDownloader-Windows
+        path: dist/TorrentDownloader-Windows.zip
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+        brew install libtorrent-rasterbar
+        
+    - name: Generate icons
+      run: python convert_icons.py
+      
+    - name: Build macOS application
+      run: pyinstaller torrent_downloader.spec
+      
+    - name: Create macOS ZIP
+      run: |
+        cd dist
+        zip -r TorrentDownloader-macOS.zip TorrentDownloader.app
+        
+    - name: Upload macOS artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: TorrentDownloader-macOS
+        path: dist/TorrentDownloader-macOS.zip 
