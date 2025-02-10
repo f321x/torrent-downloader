@@ -11,12 +11,13 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.13'
+        python-version: '3.12'
+        cache: 'pip'
         
     - name: Install dependencies
       run: |
@@ -25,9 +26,14 @@ jobs:
         pip install pyinstaller
         python -c "import sys; print(f'Python version: {sys.version}')"
         python -c "import platform; print(f'Platform: {platform.platform()}')"
+        pip list
         
     - name: Generate icons
-      run: python convert_icons.py
+      run: |
+        echo "Installing CairoSVG dependencies..."
+        pip install cairosvg pillow
+        echo "Generating icons..."
+        python convert_icons.py
       
     - name: Build Windows executable
       run: |
@@ -45,20 +51,22 @@ jobs:
         Get-Item TorrentDownloader-Windows.zip | Select-Object Length
         
     - name: Upload Windows artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: TorrentDownloader-Windows
         path: dist/TorrentDownloader-Windows.zip
+        compression-level: 0
 
   build-macos:
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.13'
+        python-version: '3.12'
+        cache: 'pip'
         
     - name: Install dependencies
       run: |
@@ -68,9 +76,14 @@ jobs:
         brew install libtorrent-rasterbar
         python -c "import sys; print(f'Python version: {sys.version}')"
         python -c "import platform; print(f'Platform: {platform.platform()}')"
+        pip list
+        brew list libtorrent-rasterbar --verbose
         
     - name: Generate icons
       run: |
+        echo "Installing CairoSVG dependencies..."
+        pip install cairosvg pillow
+        brew install cairo
         echo "Generating icons..."
         python convert_icons.py
         echo "Checking generated icons..."
@@ -92,7 +105,8 @@ jobs:
         ls -lh TorrentDownloader-macOS.zip
         
     - name: Upload macOS artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: TorrentDownloader-macOS
-        path: dist/TorrentDownloader-macOS.zip 
+        path: dist/TorrentDownloader-macOS.zip
+        compression-level: 0 
