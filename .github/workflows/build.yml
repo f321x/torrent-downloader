@@ -172,14 +172,35 @@ jobs:
         brew update
         brew uninstall --ignore-dependencies boost-python3 || true
         brew uninstall --ignore-dependencies libtorrent-rasterbar || true
+        brew uninstall --ignore-dependencies boost || true
+        
+        # Get Python version and paths
+        PYTHON_VERSION=$(python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+        PYTHON_ROOT=$(python -c "import sys; print(sys.prefix)")
+        echo "Python version: $PYTHON_VERSION"
+        echo "Python root: $PYTHON_ROOT"
+        
+        # Install boost without python first
         brew install boost
         
-        # Install boost-python with the correct Python version
-        PYTHON_VERSION=$(python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-        echo "Python version: $PYTHON_VERSION"
+        # Build boost-python from source for Python 3.12
+        git clone --depth 1 --branch boost-1.84.0 https://github.com/boostorg/boost.git
+        cd boost
+        git submodule update --init tools/build
+        git submodule update --init libs/config
+        git submodule update --init libs/python
+        git submodule update --init libs/system
         
-        # Build boost-python from source to ensure Python 3.12 compatibility
-        brew install --build-from-source boost-python3
+        # Configure boost-build with Python paths
+        echo "using python : ${PYTHON_VERSION} : ${PYTHON_ROOT}/bin/python3 : ${PYTHON_ROOT}/include/python${PYTHON_VERSION} : ${PYTHON_ROOT}/lib ;" > ~/user-config.jam
+        
+        # Build and install boost-python
+        ./bootstrap.sh --with-python=$(which python3) --with-python-version=${PYTHON_VERSION}
+        ./b2 --with-python variant=release link=shared threading=multi runtime-link=shared
+        sudo ./b2 --with-python install
+        cd ..
+        
+        # Now install libtorrent-rasterbar
         brew install libtorrent-rasterbar
         brew install cairo
         echo "::endgroup::"
@@ -230,8 +251,11 @@ jobs:
               -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 \
               -Dpython-bindings=ON \
               -DPython_EXECUTABLE=$PYTHON_EXECUTABLE \
-              -DPython_LIBRARIES=$(python-config --prefix)/lib/libpython${PYTHON_VERSION}.dylib \
-              -DPython_INCLUDE_DIRS=$(python -c "import sysconfig; print(sysconfig.get_path('include'))") \
+              -DPython_INCLUDE_DIR=$(python -c "import sysconfig; print(sysconfig.get_path('include'))") \
+              -DPython_LIBRARY=$(python -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))")/libpython${PYTHON_VERSION}.dylib \
+              -DBoost_PYTHON_VERSION=$PYTHON_VERSION \
+              -DBOOST_LIBRARYDIR=$BOOST_PATH/lib \
+              -DBOOST_INCLUDEDIR=$BOOST_PATH/include \
               -B build
         
         cmake --build build --parallel
