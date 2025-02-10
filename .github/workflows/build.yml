@@ -52,22 +52,7 @@ jobs:
       run: |
         echo "::group::Generating icons"
         # Fallback to direct PNG conversion if SVG conversion fails
-        python -c "
-import sys
-from PIL import Image
-import cairosvg
-
-try:
-    # Try CairoSVG first
-    cairosvg.svg2png(url='icon.svg', write_to='icon_256.png', output_width=256, output_height=256)
-except Exception as e:
-    print(f'CairoSVG failed: {e}')
-    sys.exit(1)
-
-# Convert to ICO
-img = Image.open('icon_256.png')
-img.save('icon.ico', format='ICO', sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
-"
+        python -c "from PIL import Image; import cairosvg; cairosvg.svg2png(url='icon.svg', write_to='icon_256.png', output_width=256, output_height=256); img = Image.open('icon_256.png'); img.save('icon.ico', format='ICO', sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])"
         if (-not (Test-Path "icon.ico")) {
           echo "::error::icon.ico was not generated"
           exit 1
