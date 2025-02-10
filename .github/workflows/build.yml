@@ -170,45 +170,35 @@ jobs:
       run: |
         echo "::group::Installing system dependencies"
         brew update
+        
+        # Clean up existing installations
         brew uninstall --ignore-dependencies boost-python3 || true
         brew uninstall --ignore-dependencies libtorrent-rasterbar || true
         brew uninstall --ignore-dependencies boost || true
         
-        # Get Python version and paths
-        PYTHON_VERSION=$(python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-        PYTHON_ROOT=$(python -c "import sys; print(sys.prefix)")
+        # Install Python 3.12 from Homebrew
+        brew install python@3.12
+        brew link --force python@3.12
+        
+        # Get Python paths
+        PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+        PYTHON_ROOT=$(brew --prefix python@3.12)
         echo "Python version: $PYTHON_VERSION"
         echo "Python root: $PYTHON_ROOT"
         
-        # Install boost without python first
+        # Install Boost with Python support
         brew install boost
+        brew install boost-python3
         
-        # Build boost-python from source for Python 3.12
-        git clone --depth 1 --branch boost-1.84.0 https://github.com/boostorg/boost.git
-        cd boost
-        git submodule update --init tools/build
-        git submodule update --init libs/config
-        git submodule update --init libs/python
-        git submodule update --init libs/system
-        
-        # Configure boost-build with Python paths
-        echo "using python : ${PYTHON_VERSION} : ${PYTHON_ROOT}/bin/python3 : ${PYTHON_ROOT}/include/python${PYTHON_VERSION} : ${PYTHON_ROOT}/lib ;" > ~/user-config.jam
-        
-        # Build and install boost-python
-        ./bootstrap.sh --with-python=$(which python3) --with-python-version=${PYTHON_VERSION}
-        ./b2 --with-python variant=release link=shared threading=multi runtime-link=shared
-        sudo ./b2 --with-python install
-        cd ..
-        
-        # Now install libtorrent-rasterbar
+        # Install other dependencies
         brew install libtorrent-rasterbar
         brew install cairo
         echo "::endgroup::"
         
         echo "::group::Installing Python dependencies"
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pyinstaller
+        python3 -m pip install --upgrade pip
+        pip3 install -r requirements.txt
+        pip3 install pyinstaller
         
         echo "Setting up libtorrent paths"
         LIBTORRENT_PATH=$(brew --prefix libtorrent-rasterbar)
@@ -218,7 +208,7 @@ jobs:
         
         # Try to find the libtorrent Python module
         echo "Checking for libtorrent Python module..."
-        SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
+        SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
         echo "Site packages directory: $SITE_PACKAGES"
         
         # Create symbolic links for the libraries
@@ -240,7 +230,7 @@ jobs:
         export BOOST_INCLUDEDIR=$BOOST_PATH/include
         export CXXFLAGS="-I$BOOST_PATH/include -std=c++17"
         export LDFLAGS="-L$BOOST_PATH/lib"
-        export PYTHON_EXECUTABLE=$(which python)
+        export PYTHON_EXECUTABLE=$(which python3)
         
         # Configure with specific Python paths
         cmake -DCMAKE_BUILD_TYPE=Release \
@@ -251,8 +241,8 @@ jobs:
               -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 \
               -Dpython-bindings=ON \
               -DPython_EXECUTABLE=$PYTHON_EXECUTABLE \
-              -DPython_INCLUDE_DIR=$(python -c "import sysconfig; print(sysconfig.get_path('include'))") \
-              -DPython_LIBRARY=$(python -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))")/libpython${PYTHON_VERSION}.dylib \
+              -DPython_INCLUDE_DIR=$PYTHON_ROOT/Frameworks/Python.framework/Versions/Current/include/python${PYTHON_VERSION} \
+              -DPython_LIBRARY=$PYTHON_ROOT/Frameworks/Python.framework/Versions/Current/lib/libpython${PYTHON_VERSION}.dylib \
               -DBoost_PYTHON_VERSION=$PYTHON_VERSION \
               -DBOOST_LIBRARYDIR=$BOOST_PATH/lib \
               -DBOOST_INCLUDEDIR=$BOOST_PATH/include \
