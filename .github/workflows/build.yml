@@ -99,9 +99,9 @@ jobs:
       run: |
         echo "::group::Installing system dependencies"
         brew update
+        brew install boost-python3
         brew install libtorrent-rasterbar
         brew install cairo
-        brew list libtorrent-rasterbar --verbose
         echo "::endgroup::"
         
         echo "::group::Installing Python dependencies"
@@ -109,12 +109,15 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
         
-        # Install Python bindings for libtorrent
-        export CFLAGS="-I/usr/local/include"
-        export LDFLAGS="-L/usr/local/lib"
-        export PYTHON_CFLAGS="$(python3-config --cflags)"
-        export PYTHON_LIBS="$(python3-config --ldflags)"
-        pip install --no-binary :all: python-libtorrent
+        echo "Setting up libtorrent paths"
+        LIBTORRENT_PATH=$(brew --prefix libtorrent-rasterbar)
+        BOOST_PATH=$(brew --prefix boost-python3)
+        echo "LIBTORRENT_PATH=$LIBTORRENT_PATH"
+        echo "BOOST_PATH=$BOOST_PATH"
+        
+        # Create a symbolic link for Python to find libtorrent
+        mkdir -p $(python -c "import site; print(site.getsitepackages()[0])")
+        ln -sf $LIBTORRENT_PATH/lib/python3/dist-packages/libtorrent.so $(python -c "import site; print(site.getsitepackages()[0])")/
         echo "::endgroup::"
         
         echo "::group::Verifying Python installation"
@@ -124,10 +127,10 @@ jobs:
         echo "::endgroup::"
         
         echo "::group::Verifying critical dependencies"
+        ls -l $LIBTORRENT_PATH/lib/python3/dist-packages/
+        ls -l $(python -c "import site; print(site.getsitepackages()[0])")
         python -c "import libtorrent; print(f'libtorrent version: {libtorrent.__version__}')"
         python -c "import tkinter; print('Tkinter is available')"
-        ls -l /usr/local/lib/python*/site-packages/libtorrent* || true
-        echo "PYTHONPATH=$PYTHONPATH"
         echo "::endgroup::"
         
     - name: Generate icons
