@@ -73,8 +73,8 @@ jobs:
         # Add MSYS2 bin to PATH for the Cairo DLLs
         $env:PATH = "${{ github.workspace }}/msys64/mingw64/bin;$env:PATH"
         
-        # Create Python script
-        @'
+        # Create Python script and write it using Set-Content
+        Set-Content -Path generate_icons.py -Value @'
 try:
     import cairosvg
     import os
@@ -85,23 +85,17 @@ except Exception as e:
     print(f"CairoSVG failed: {e}")
     print("Falling back to PIL for direct PNG to ICO conversion...")
     from PIL import Image
-    # Create a blue square with white download arrow as fallback
     img = Image.new("RGB", (256, 256), "#2196F3")
-    # Add a simple white arrow
     from PIL import ImageDraw
     draw = ImageDraw.Draw(img)
-    # Draw arrow shaft
     draw.rectangle((120, 60, 136, 160), fill="white")
-    # Draw arrow head
     points = [(80, 140), (128, 196), (176, 140)]
     draw.polygon(points, fill="white")
     img.save("icon_256.png")
-
-# Convert to ICO with multiple sizes
 img = Image.open("icon_256.png")
 img.save("icon.ico", format="ICO", sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
 print("Icon generation completed successfully")
-'@ | Out-File -FilePath "generate_icons.py" -Encoding UTF8
+'@ -Encoding UTF8
         
         # Execute the script
         python generate_icons.py
