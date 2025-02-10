@@ -176,7 +176,7 @@ jobs:
         brew uninstall --ignore-dependencies libtorrent-rasterbar || true
         brew uninstall --ignore-dependencies boost || true
         
-        # Install Python 3.13 from Homebrew (if not already installed, actions/setup-python uses hosted tool cache, but we ensure consistency)
+        # Install Python 3.13 from Homebrew (if not already installed)
         brew install python@3.13
         brew link --force python@3.13
         
@@ -200,43 +200,24 @@ jobs:
         pip3 install -r requirements.txt
         pip3 install pyinstaller
         
-        echo "Setting up libtorrent paths"
-        LIBTORRENT_PATH=$(brew --prefix libtorrent-rasterbar)
-        BOOST_PATH=$(brew --prefix boost)
-        echo "LIBTORRENT_PATH=$LIBTORRENT_PATH"
-        echo "BOOST_PATH=$BOOST_PATH"
-        
-        # Try to find the libtorrent Python module
-        echo "Checking for libtorrent Python module..."
-        SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
-        echo "Site packages directory: $SITE_PACKAGES"
-        
-        # Create symbolic links for the libraries
-        echo "Creating symbolic links for libraries..."
-        for lib in $LIBTORRENT_PATH/lib/lib*.dylib; do
-          echo "Linking $lib"
-          ln -sf "$lib" "$SITE_PACKAGES/"
-        done
-        
         # Install libtorrent from source
         echo "Building libtorrent Python bindings from source..."
         brew install cmake ninja boost-build
         git clone --depth 1 --branch v2.0.9 https://github.com/arvidn/libtorrent.git
         cd libtorrent
-        mkdir -p deps/try_signal && touch deps/try_signal/try_signal.cpp
         
         # Set environment variables for the build
-        export BOOST_ROOT=$BOOST_PATH
-        export BOOST_LIBRARYDIR=$BOOST_PATH/lib
-        export BOOST_INCLUDEDIR=$BOOST_PATH/include
-        export CXXFLAGS="-I$BOOST_PATH/include -std=c++17"
-        export LDFLAGS="-L$BOOST_PATH/lib"
+        export BOOST_ROOT=$(brew --prefix boost)
+        export BOOST_LIBRARYDIR=$BOOST_ROOT/lib
+        export BOOST_INCLUDEDIR=$BOOST_ROOT/include
+        export CXXFLAGS="-I$BOOST_ROOT/include -std=c++17"
+        export LDFLAGS="-L$BOOST_ROOT/lib"
         export PYTHON_EXECUTABLE=$(which python3)
         
         # Configure with specific Python paths
-        cmake -DCMAKE_BUILD_TYPE=Release \
-              -DCMAKE_INSTALL_PREFIX=$SITE_PACKAGES \
-              -DCMAKE_PREFIX_PATH="$BOOST_PATH" \
+        cmake -B build -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_INSTALL_PREFIX=/usr/local \
+              -DCMAKE_PREFIX_PATH="$BOOST_ROOT" \
               -DBoost_NO_BOOST_CMAKE=OFF \
               -DBoost_NO_SYSTEM_PATHS=OFF \
               -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 \
@@ -245,12 +226,15 @@ jobs:
               -DPython_INCLUDE_DIR=$PYTHON_ROOT/Frameworks/Python.framework/Versions/Current/include/python${PYTHON_VERSION} \
               -DPython_LIBRARY=$PYTHON_ROOT/Frameworks/Python.framework/Versions/Current/lib/libpython${PYTHON_VERSION}.dylib \
               -DBoost_PYTHON_VERSION=$PYTHON_VERSION \
-              -DBOOST_LIBRARYDIR=$BOOST_PATH/lib \
-              -DBOOST_INCLUDEDIR=$BOOST_PATH/include \
-              -B build
+              -DBOOST_LIBRARYDIR=$BOOST_ROOT/lib \
+              -DBOOST_INCLUDEDIR=$BOOST_ROOT/include \
+              -DBUILD_SHARED_LIBS=ON \
+              -DBUILD_EXAMPLES=OFF \
+              -DBUILD_TOOLS=OFF \
+              -DBUILD_TESTS=OFF
         
         cmake --build build --parallel
-        cmake --install build
+        sudo cmake --install build
         cd ..
         echo "::endgroup::"
         
