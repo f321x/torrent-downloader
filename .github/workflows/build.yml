@@ -133,12 +133,36 @@ img.save('icon.ico', format='ICO', sizes=[(16, 16), (32, 32), (48, 48), (64, 64)
         echo "Setting up libtorrent paths"
         LIBTORRENT_PATH=$(brew --prefix libtorrent-rasterbar)
         BOOST_PATH=$(brew --prefix boost-python3)
+        PYTHON_VERSION=$(python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
         echo "LIBTORRENT_PATH=$LIBTORRENT_PATH"
         echo "BOOST_PATH=$BOOST_PATH"
+        echo "PYTHON_VERSION=$PYTHON_VERSION"
         
-        # Create a symbolic link for Python to find libtorrent
-        mkdir -p $(python -c "import site; print(site.getsitepackages()[0])")
-        ln -sf $LIBTORRENT_PATH/lib/python3/dist-packages/libtorrent.so $(python -c "import site; print(site.getsitepackages()[0])")/
+        # Try different possible paths for libtorrent
+        POSSIBLE_PATHS=(
+          "$LIBTORRENT_PATH/lib/python$PYTHON_VERSION/site-packages"
+          "$LIBTORRENT_PATH/lib/python3/dist-packages"
+          "$LIBTORRENT_PATH/lib/python$PYTHON_VERSION/dist-packages"
+        )
+        
+        FOUND_LIBTORRENT=0
+        for PATH_TO_CHECK in "${POSSIBLE_PATHS[@]}"; do
+          echo "Checking $PATH_TO_CHECK"
+          if [ -f "$PATH_TO_CHECK/libtorrent.so" ]; then
+            echo "Found libtorrent.so at $PATH_TO_CHECK"
+            mkdir -p $(python -c "import site; print(site.getsitepackages()[0])")
+            ln -sf "$PATH_TO_CHECK/libtorrent.so" $(python -c "import site; print(site.getsitepackages()[0])")/
+            FOUND_LIBTORRENT=1
+            break
+          fi
+        done
+        
+        if [ $FOUND_LIBTORRENT -eq 0 ]; then
+          echo "Could not find libtorrent.so, attempting to install via pip"
+          CFLAGS="-I$BOOST_PATH/include -I$LIBTORRENT_PATH/include" \
+          LDFLAGS="-L$BOOST_PATH/lib -L$LIBTORRENT_PATH/lib" \
+          pip install python-libtorrent
+        fi
         echo "::endgroup::"
         
         echo "::group::Verifying Python installation"
@@ -148,8 +172,6 @@ img.save('icon.ico', format='ICO', sizes=[(16, 16), (32, 32), (48, 48), (64, 64)
         echo "::endgroup::"
         
         echo "::group::Verifying critical dependencies"
-        ls -l $LIBTORRENT_PATH/lib/python3/dist-packages/
-        ls -l $(python -c "import site; print(site.getsitepackages()[0])")
         python -c "import libtorrent; print(f'libtorrent version: {libtorrent.__version__}')"
         python -c "import tkinter; print('Tkinter is available')"
         echo "::endgroup::"
