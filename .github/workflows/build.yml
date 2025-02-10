@@ -19,6 +19,17 @@ jobs:
         python-version: '3.12'
         cache: 'pip'
         
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >-
+          mingw-w64-x86_64-cairo
+          mingw-w64-x86_64-gtk3
+          mingw-w64-x86_64-python-cairo
+          mingw-w64-x86_64-pkg-config
+        
     - name: Install dependencies
       run: |
         echo "::group::Upgrading pip and installing dependencies"
@@ -39,10 +50,18 @@ jobs:
         python -c "import tkinter; print('Tkinter is available')"
         echo "::endgroup::"
         
-    - name: Install GTK and Cairo dependencies
+    - name: Install Python dependencies
       run: |
-        echo "::group::Installing GTK and Cairo dependencies"
+        echo "::group::Installing Python dependencies"
         pip install --upgrade pip wheel setuptools
+        
+        # Add MSYS2 bin directory to PATH for DLLs
+        echo "${{ github.workspace }}/msys64/mingw64/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        $env:PATH = "${{ github.workspace }}/msys64/mingw64/bin;$env:PATH"
+        
+        # Set PKG_CONFIG_PATH for Cairo
+        $env:PKG_CONFIG_PATH = "${{ github.workspace }}/msys64/mingw64/lib/pkgconfig"
+        
         pip install pycairo
         pip install PyGObject
         pip install cairosvg pillow
@@ -51,6 +70,9 @@ jobs:
     - name: Generate icons
       run: |
         echo "::group::Generating icons"
+        # Add MSYS2 bin to PATH for the Cairo DLLs
+        $env:PATH = "${{ github.workspace }}/msys64/mingw64/bin;$env:PATH"
+        
         # Fallback to direct PNG conversion if SVG conversion fails
         python -c "from PIL import Image; import cairosvg; cairosvg.svg2png(url='icon.svg', write_to='icon_256.png', output_width=256, output_height=256); img = Image.open('icon_256.png'); img.save('icon.ico', format='ICO', sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])"
         if (-not (Test-Path "icon.ico")) {
