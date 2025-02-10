@@ -123,30 +123,35 @@ jobs:
         echo "BOOST_PATH=$BOOST_PATH"
         echo "PYTHON_VERSION=$PYTHON_VERSION"
         
-        # Try different possible paths for libtorrent
-        POSSIBLE_PATHS=(
-          "$LIBTORRENT_PATH/lib/python$PYTHON_VERSION/site-packages"
-          "$LIBTORRENT_PATH/lib/python3/dist-packages"
-          "$LIBTORRENT_PATH/lib/python$PYTHON_VERSION/dist-packages"
-        )
+        # Try to find the libtorrent Python module
+        echo "Checking for libtorrent Python module..."
+        SITE_PACKAGES=$(python -c "import site; print(site.getsitepackages()[0])")
+        echo "Site packages directory: $SITE_PACKAGES"
         
-        FOUND_LIBTORRENT=0
-        for PATH_TO_CHECK in "${POSSIBLE_PATHS[@]}"; do
-          echo "Checking $PATH_TO_CHECK"
-          if [ -f "$PATH_TO_CHECK/libtorrent.so" ]; then
-            echo "Found libtorrent.so at $PATH_TO_CHECK"
-            mkdir -p $(python -c "import site; print(site.getsitepackages()[0])")
-            ln -sf "$PATH_TO_CHECK/libtorrent.so" $(python -c "import site; print(site.getsitepackages()[0])")/
-            FOUND_LIBTORRENT=1
-            break
-          fi
+        # Create symbolic links for the libraries
+        echo "Creating symbolic links for libraries..."
+        for lib in $LIBTORRENT_PATH/lib/lib*.dylib; do
+          echo "Linking $lib"
+          ln -sf "$lib" "$SITE_PACKAGES/"
         done
         
-        if [ $FOUND_LIBTORRENT -eq 0 ]; then
-          echo "Could not find libtorrent.so, attempting to install via pip"
-          CFLAGS="-I$BOOST_PATH/include -I$LIBTORRENT_PATH/include" \
-          LDFLAGS="-L$BOOST_PATH/lib -L$LIBTORRENT_PATH/lib" \
-          pip install python-libtorrent
+        # Install libtorrent from source if needed
+        if ! python -c "import libtorrent" 2>/dev/null; then
+          echo "Building libtorrent Python bindings from source..."
+          brew install cmake ninja boost-build
+          git clone --depth 1 --branch v2.0.9 https://github.com/arvidn/libtorrent.git
+          cd libtorrent
+          cmake -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_INSTALL_PREFIX=$SITE_PACKAGES \
+                -DCMAKE_PREFIX_PATH=$BOOST_PATH \
+                -Dpython-bindings=ON \
+                -Dboost-python-module-name=python \
+                -Dpython-package-dir=$SITE_PACKAGES \
+                -DPython_EXECUTABLE=$(which python) \
+                -B build
+          cmake --build build --parallel
+          cmake --install build
+          cd ..
         fi
         echo "::endgroup::"
         
