@@ -21,34 +21,60 @@ jobs:
         
     - name: Install dependencies
       run: |
+        echo "::group::Upgrading pip and installing dependencies"
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pyinstaller
+        echo "::endgroup::"
+        
+        echo "::group::Verifying Python installation"
         python -c "import sys; print(f'Python version: {sys.version}')"
         python -c "import platform; print(f'Platform: {platform.platform()}')"
         pip list
+        echo "::endgroup::"
+        
+        echo "::group::Verifying critical dependencies"
+        python -c "import libtorrent; print(f'libtorrent version: {libtorrent.__version__}')"
+        python -c "import tkinter; print('Tkinter is available')"
+        echo "::endgroup::"
         
     - name: Generate icons
       run: |
-        echo "Installing CairoSVG dependencies..."
+        echo "::group::Installing CairoSVG dependencies"
         pip install cairosvg pillow
-        echo "Generating icons..."
+        echo "::endgroup::"
+        
+        echo "::group::Generating icons"
         python convert_icons.py
+        if (-not (Test-Path "icon.ico")) {
+          echo "::error::icon.ico was not generated"
+          exit 1
+        }
+        echo "::endgroup::"
       
     - name: Build Windows executable
       run: |
-        echo "Starting Windows build..."
+        echo "::group::Starting Windows build"
         pyinstaller torrent_downloader_win.spec
         echo "Build completed. Checking dist directory..."
         dir dist
+        if (-not (Test-Path "dist/TorrentDownloader/TorrentDownloader.exe")) {
+          echo "::error::TorrentDownloader.exe was not generated"
+          exit 1
+        }
+        echo "::endgroup::"
       
     - name: Create Windows ZIP
       run: |
         cd dist
-        echo "Creating ZIP archive..."
+        echo "::group::Creating ZIP archive"
         Compress-Archive -Path TorrentDownloader -DestinationPath TorrentDownloader-Windows.zip
-        echo "ZIP created. Checking file size..."
-        Get-Item TorrentDownloader-Windows.zip | Select-Object Length
+        $zipFile = Get-Item TorrentDownloader-Windows.zip
+        echo "ZIP file size: $($zipFile.Length) bytes"
+        if ($zipFile.Length -lt 1000000) {
+          echo "::warning::ZIP file seems unusually small"
+        }
+        echo "::endgroup::"
         
     - name: Upload Windows artifact
       uses: actions/upload-artifact@v4
@@ -70,39 +96,68 @@ jobs:
         
     - name: Install dependencies
       run: |
+        echo "::group::Upgrading pip and installing dependencies"
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pyinstaller
+        echo "::endgroup::"
+        
+        echo "::group::Installing system dependencies"
         brew install libtorrent-rasterbar
+        brew list libtorrent-rasterbar --verbose
+        echo "::endgroup::"
+        
+        echo "::group::Verifying Python installation"
         python -c "import sys; print(f'Python version: {sys.version}')"
         python -c "import platform; print(f'Platform: {platform.platform()}')"
         pip list
-        brew list libtorrent-rasterbar --verbose
+        echo "::endgroup::"
+        
+        echo "::group::Verifying critical dependencies"
+        python -c "import libtorrent; print(f'libtorrent version: {libtorrent.__version__}')"
+        python -c "import tkinter; print('Tkinter is available')"
+        echo "::endgroup::"
         
     - name: Generate icons
       run: |
-        echo "Installing CairoSVG dependencies..."
+        echo "::group::Installing CairoSVG dependencies"
         pip install cairosvg pillow
         brew install cairo
-        echo "Generating icons..."
+        echo "::endgroup::"
+        
+        echo "::group::Generating icons"
         python convert_icons.py
-        echo "Checking generated icons..."
+        if [ ! -f "icon.icns" ]; then
+          echo "::error::icon.icns was not generated"
+          exit 1
+        fi
         ls -l icon.*
+        echo "::endgroup::"
       
     - name: Build macOS application
       run: |
-        echo "Starting macOS build..."
+        echo "::group::Starting macOS build"
         pyinstaller torrent_downloader.spec
         echo "Build completed. Checking dist directory..."
         ls -la dist
+        if [ ! -d "dist/TorrentDownloader.app" ]; then
+          echo "::error::TorrentDownloader.app was not generated"
+          exit 1
+        fi
+        echo "::endgroup::"
       
     - name: Create macOS ZIP
       run: |
         cd dist
-        echo "Creating ZIP archive..."
+        echo "::group::Creating ZIP archive"
         zip -r TorrentDownloader-macOS.zip TorrentDownloader.app
-        echo "ZIP created. Checking file size..."
+        ZIP_SIZE=$(stat -f%z TorrentDownloader-macOS.zip)
+        echo "ZIP file size: $ZIP_SIZE bytes"
+        if [ "$ZIP_SIZE" -lt 1000000 ]; then
+          echo "::warning::ZIP file seems unusually small"
+        fi
         ls -lh TorrentDownloader-macOS.zip
+        echo "::endgroup::"
         
     - name: Upload macOS artifact
       uses: actions/upload-artifact@v4
