@@ -1,7 +1,9 @@
+# Core dependencies
 pyinstaller>=6.0.0
-python-libtorrent>=2.0.0
 pillow>=10.0.0  # For icon conversion
 cairosvg>=2.7.0  # For SVG to PNG conversion
-# Platform-specific dependencies will be handled by the package manager
+
+# Platform-specific dependencies
 # Windows: pip install python-libtorrent
-# macOS: brew install libtorrent-rasterbar 
+# macOS: Use brew install libtorrent-rasterbar instead of pip
+# Linux: Use system package manager (apt/dnf/etc) for libtorrent-rasterbar 

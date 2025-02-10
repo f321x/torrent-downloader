@@ -24,6 +24,7 @@ jobs:
         echo "::group::Upgrading pip and installing dependencies"
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        pip install python-libtorrent>=2.0.0
         pip install pyinstaller
         echo "::endgroup::"
         
@@ -96,15 +97,17 @@ jobs:
         
     - name: Install dependencies
       run: |
-        echo "::group::Upgrading pip and installing dependencies"
+        echo "::group::Installing system dependencies"
+        brew update
+        brew install libtorrent-rasterbar
+        brew install cairo
+        brew list libtorrent-rasterbar --verbose
+        echo "::endgroup::"
+        
+        echo "::group::Installing Python dependencies"
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pyinstaller
-        echo "::endgroup::"
-        
-        echo "::group::Installing system dependencies"
-        brew install libtorrent-rasterbar
-        brew list libtorrent-rasterbar --verbose
         echo "::endgroup::"
         
         echo "::group::Verifying Python installation"
@@ -122,7 +125,6 @@ jobs:
       run: |
         echo "::group::Installing CairoSVG dependencies"
         pip install cairosvg pillow
-        brew install cairo
         echo "::endgroup::"
         
         echo "::group::Generating icons"
