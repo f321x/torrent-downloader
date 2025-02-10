@@ -223,6 +223,7 @@ jobs:
         brew install cmake ninja boost-build
         git clone --depth 1 --branch v2.0.9 https://github.com/arvidn/libtorrent.git
         cd libtorrent
+        mkdir -p deps/try_signal && touch deps/try_signal/try_signal.cpp
         
         # Set environment variables for the build
         export BOOST_ROOT=$BOOST_PATH
