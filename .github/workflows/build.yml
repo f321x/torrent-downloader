@@ -113,9 +113,26 @@ jobs:
         pyinstaller torrent_downloader_win.spec
         echo "Build completed. Checking dist directory..."
         dir dist
-        if (-not (Test-Path "dist/TorrentDownloader/TorrentDownloader.exe")) {
-          echo "::error::TorrentDownloader.exe was not generated"
+        
+        # Check for the directory-based build
+        if (-not (Test-Path "dist/TorrentDownloader")) {
+          echo "::error::TorrentDownloader directory was not generated"
           exit 1
+        }
+        
+        # Check for the executable inside the directory
+        if (-not (Test-Path "dist/TorrentDownloader/TorrentDownloader.exe")) {
+          echo "::error::TorrentDownloader.exe was not found in the correct location"
+          echo "Contents of dist/TorrentDownloader:"
+          dir "dist/TorrentDownloader"
+          exit 1
+        }
+        
+        # Verify the executable size
+        $exeFile = Get-Item "dist/TorrentDownloader/TorrentDownloader.exe"
+        echo "Executable size: $($exeFile.Length) bytes"
+        if ($exeFile.Length -lt 1000000) {
+          echo "::warning::Executable seems unusually small"
         }
         echo "::endgroup::"
       
