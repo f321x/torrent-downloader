@@ -39,14 +39,35 @@ jobs:
         python -c "import tkinter; print('Tkinter is available')"
         echo "::endgroup::"
         
-    - name: Generate icons
+    - name: Install GTK and Cairo dependencies
       run: |
-        echo "::group::Installing CairoSVG dependencies"
+        echo "::group::Installing GTK and Cairo dependencies"
+        pip install --upgrade pip wheel setuptools
+        pip install pycairo
+        pip install PyGObject
         pip install cairosvg pillow
         echo "::endgroup::"
         
+    - name: Generate icons
+      run: |
         echo "::group::Generating icons"
-        python convert_icons.py
+        # Fallback to direct PNG conversion if SVG conversion fails
+        python -c "
+import sys
+from PIL import Image
+import cairosvg
+
+try:
+    # Try CairoSVG first
+    cairosvg.svg2png(url='icon.svg', write_to='icon_256.png', output_width=256, output_height=256)
+except Exception as e:
+    print(f'CairoSVG failed: {e}')
+    sys.exit(1)
+
+# Convert to ICO
+img = Image.open('icon_256.png')
+img.save('icon.ico', format='ICO', sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
+"
         if (-not (Test-Path "icon.ico")) {
           echo "::error::icon.ico was not generated"
           exit 1
