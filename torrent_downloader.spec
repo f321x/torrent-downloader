@@ -56,7 +56,6 @@ a = Analysis(
         ('/usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so', '.'),
         ('/usr/local/lib/libtorrent-rasterbar.2.0.dylib', 'Frameworks/libtorrent.framework/Versions/Current'),
         ('/usr/local/lib/libtorrent-rasterbar.dylib', 'Frameworks/libtorrent.framework/Versions/Current'),
-        (os.path.join(tcl_lib, 'libtcl9.0.dylib'), 'Frameworks/tcl.framework/Versions/Current'),
         (os.path.join(tcl_lib, 'libtcl9tk9.0.dylib'), 'Frameworks/tk.framework/Versions/Current'),
     ],
     datas=[
