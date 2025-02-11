@@ -253,6 +253,8 @@ jobs:
         echo "::group::Starting macOS build"
         sudo mkdir -p /usr/local/lib
         sudo ln -sf "$(brew --prefix libtorrent-rasterbar)/lib/libtorrent-rasterbar.2.0.11.dylib" /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib
+        SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
+        sudo ln -sf "$SITE_PACKAGES/libtorrent-rasterbar.2.0.11.dylib" "$SITE_PACKAGES/libtorrent.cpython-313-darwin.so"
         pyinstaller torrent_downloader.spec
         echo "Build completed. Checking dist directory..."
         ls -la dist
