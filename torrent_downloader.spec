@@ -23,9 +23,9 @@ import sys
 def _fix_tkinter():
     if sys.platform == 'darwin':
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(sys.executable)))
-        os.environ['TK_LIBRARY'] = os.path.join(base_dir, 'Resources', 'tk.framework', 'Versions', 'Current', 'Resources')
-        os.environ['TCL_LIBRARY'] = os.path.join(base_dir, 'Resources', 'tcl.framework', 'Versions', 'Current', 'Resources')
-        os.environ['TKPATH'] = os.path.join(base_dir, 'Resources')
+        os.environ['TK_LIBRARY'] = os.path.join(base_dir, 'Frameworks', 'tk', 'Resources')
+        os.environ['TCL_LIBRARY'] = os.path.join(base_dir, 'Frameworks', 'tcl', 'Resources')
+        os.environ['TKPATH'] = os.path.join(base_dir, 'Frameworks')
 
 _fix_tkinter()
 """)
@@ -54,13 +54,13 @@ a = Analysis(
     ],
     binaries=[
         ('/usr/local/lib/libtorrent-rasterbar.2.0.11.dylib', 'Frameworks'),
-        ('/usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so', '.'),
+        ('/usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so', 'Frameworks'),
         ('/usr/local/lib/libtorrent-rasterbar.2.0.dylib', 'Frameworks'),
         ('/usr/local/lib/libtorrent-rasterbar.dylib', 'Frameworks'),
     ],
     datas=[
-        (tcl_lib, 'tcl.framework/Versions/Current/Resources'),
-        (tk_lib, 'tk.framework/Versions/Current/Resources'),
+        (tcl_lib, 'Frameworks/tcl/Resources'),
+        (tk_lib, 'Frameworks/tk/Resources'),
     ],
     hiddenimports=[
         'libtorrent',
@@ -129,10 +129,10 @@ app = BUNDLE(
         'LSEnvironment': {
             'PYTHONHOME': '@executable_path/../Resources',
             'PYTHONPATH': '@executable_path/../Resources',
-            'TCL_LIBRARY': '@executable_path/../Resources/tcl.framework/Versions/Current/Resources',
-            'TK_LIBRARY': '@executable_path/../Resources/tk.framework/Versions/Current/Resources',
-            'DYLD_LIBRARY_PATH': '@executable_path/../Resources',
-            'TKPATH': '@executable_path/../Resources'
+            'TCL_LIBRARY': '@executable_path/../Frameworks/tcl/Resources',
+            'TK_LIBRARY': '@executable_path/../Frameworks/tk/Resources',
+            'DYLD_LIBRARY_PATH': '@executable_path/../Frameworks',
+            'TKPATH': '@executable_path/../Frameworks'
         },
     }
 ) 
