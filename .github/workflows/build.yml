@@ -257,41 +257,64 @@ jobs:
         sudo chmod 755 /usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so
         echo "Contents of /usr/local/lib/python3.13/site-packages:"; sudo ls -la /usr/local/lib/python3.13/site-packages
         
-        # Build with PyInstaller
+        # Build Apple Silicon (arm64) version
+        echo "Building arm64 version..."
         pyinstaller torrent_downloader.spec
         
-        # Sign all dylibs and binaries in the app bundle
+        # Build Intel (x86_64) version
+        echo "Building Intel version..."
+        pyinstaller torrent_downloader_intel.spec
+        
+        # Sign all dylibs and binaries in both app bundles
+        echo "Signing arm64 version..."
         find "dist/TorrentDownloader.app" -type f -name "*.dylib" -o -name "*.so" | while read lib; do
           codesign --force --sign "-" --timestamp --options runtime --entitlements entitlements.plist "$lib"
         done
-        
-        # Sign the app bundle itself
         codesign --force --deep --sign "-" --timestamp --options runtime --entitlements entitlements.plist "dist/TorrentDownloader.app"
+        
+        echo "Signing Intel version..."
+        find "dist/TorrentDownloader-Intel.app" -type f -name "*.dylib" -o -name "*.so" | while read lib; do
+          codesign --force --sign "-" --timestamp --options runtime --entitlements entitlements.plist "$lib"
+        done
+        codesign --force --deep --sign "-" --timestamp --options runtime --entitlements entitlements.plist "dist/TorrentDownloader-Intel.app"
         
         echo "Build completed. Checking dist directory..."
         ls -la dist
-        if [ ! -d "dist/TorrentDownloader.app" ]; then
-          echo "::error::TorrentDownloader.app was not generated"
-          exit 1
-        fi
         echo "::endgroup::"
       
-    - name: Create macOS ZIP
+    - name: Create macOS ZIPs
       run: |
         cd dist
-        echo "::group::Creating ZIP archive"
-        zip -r TorrentDownloader-macOS.zip TorrentDownloader.app
-        ZIP_SIZE=$(stat -f%z TorrentDownloader-macOS.zip)
-        echo "ZIP file size: $ZIP_SIZE bytes"
-        if [ "$ZIP_SIZE" -lt 1000000 ]; then
-          echo "::warning::ZIP file seems unusually small"
+        echo "::group::Creating ZIP archives"
+        # Create ZIP for Apple Silicon version
+        zip -r TorrentDownloader-macOS-arm64.zip TorrentDownloader.app
+        ARM64_SIZE=$(stat -f%z TorrentDownloader-macOS-arm64.zip)
+        echo "ARM64 ZIP file size: $ARM64_SIZE bytes"
+        if [ "$ARM64_SIZE" -lt 1000000 ]; then
+          echo "::warning::ARM64 ZIP file seems unusually small"
         fi
-        ls -lh TorrentDownloader-macOS.zip
+        
+        # Create ZIP for Intel version
+        zip -r TorrentDownloader-macOS-intel.zip TorrentDownloader-Intel.app
+        INTEL_SIZE=$(stat -f%z TorrentDownloader-macOS-intel.zip)
+        echo "Intel ZIP file size: $INTEL_SIZE bytes"
+        if [ "$INTEL_SIZE" -lt 1000000 ]; then
+          echo "::warning::Intel ZIP file seems unusually small"
+        fi
+        
+        ls -lh TorrentDownloader-macOS-*.zip
         echo "::endgroup::"
         
-    - name: Upload macOS artifact
+    - name: Upload macOS ARM64 artifact
       uses: actions/upload-artifact@v4
       with:
-        name: TorrentDownloader-macOS
-        path: dist/TorrentDownloader-macOS.zip
+        name: TorrentDownloader-macOS-arm64
+        path: dist/TorrentDownloader-macOS-arm64.zip
+        compression-level: 0
+        
+    - name: Upload macOS Intel artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: TorrentDownloader-macOS-intel
+        path: dist/TorrentDownloader-macOS-intel.zip
         compression-level: 0 
