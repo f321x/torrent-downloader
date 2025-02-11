@@ -251,6 +251,8 @@ jobs:
     - name: Build macOS application
       run: |
         echo "::group::Starting macOS build"
+        sudo mkdir -p /usr/local/lib
+        sudo ln -sf "$(brew --prefix libtorrent-rasterbar)/lib/libtorrent-rasterbar.2.0.11.dylib" /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib
         pyinstaller torrent_downloader.spec
         echo "Build completed. Checking dist directory..."
         ls -la dist
