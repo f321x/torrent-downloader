@@ -204,9 +204,19 @@ jobs:
         export CFLAGS="-I$LIBTORRENT_PATH/include -I$BOOST_PATH/include"
         export LDFLAGS="-L$LIBTORRENT_PATH/lib -L$BOOST_PATH/lib"
         export PKG_CONFIG_PATH="$LIBTORRENT_PATH/lib/pkgconfig:$BOOST_PATH/lib/pkgconfig"
+        export DYLD_LIBRARY_PATH="$LIBTORRENT_PATH/lib:$BOOST_PATH/lib:$DYLD_LIBRARY_PATH"
         
-        # Install Python bindings using pip
-        pip3 install python-libtorrent
+        # Create symbolic links for the libraries
+        SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
+        echo "Site packages directory: $SITE_PACKAGES"
+        
+        # Link the libtorrent library
+        for lib in $LIBTORRENT_PATH/lib/libtorrent-rasterbar.*.dylib; do
+          sudo ln -sf "$lib" "$SITE_PACKAGES/"
+        done
+        
+        # Install libtorrent using pip
+        BOOST_ROOT=$BOOST_PATH CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" pip3 install --no-binary :all: libtorrent
         
         echo "::endgroup::"
         
@@ -217,7 +227,8 @@ jobs:
         echo "::endgroup::"
         
         echo "::group::Verifying critical dependencies"
-        python -c "import libtorrent; print(f'libtorrent version: {libtorrent.__version__}')"
+        # Add library path to Python's dynamic library search path
+        python -c "import os; os.environ['DYLD_LIBRARY_PATH']='$DYLD_LIBRARY_PATH'; import libtorrent; print(f'libtorrent version: {libtorrent.__version__}')"
         python -c "import tkinter; print('Tkinter is available')"
         echo "::endgroup::"
         
