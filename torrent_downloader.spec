@@ -39,8 +39,8 @@ import sys
 def _fix_libtorrent():
     if sys.platform == 'darwin':
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(sys.executable)))
-        os.environ['DYLD_LIBRARY_PATH'] = os.path.join(base_dir, 'Resources')
-        sys.path.insert(0, os.path.join(base_dir, 'Resources'))
+        os.environ['DYLD_LIBRARY_PATH'] = os.path.join(base_dir, 'Frameworks')
+        sys.path.insert(0, os.path.join(base_dir, 'Frameworks'))
 
 _fix_libtorrent()
 """)
@@ -53,10 +53,10 @@ a = Analysis(
         os.path.dirname(python_path),
     ],
     binaries=[
-        ('/usr/local/lib/libtorrent-rasterbar.2.0.11.dylib', 'libtorrent.framework/Versions/Current'),
+        ('/usr/local/lib/libtorrent-rasterbar.2.0.11.dylib', 'Frameworks'),
         ('/usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so', '.'),
-        ('/usr/local/lib/libtorrent-rasterbar.2.0.dylib', 'libtorrent.framework/Versions/Current'),
-        ('/usr/local/lib/libtorrent-rasterbar.dylib', 'libtorrent.framework/Versions/Current'),
+        ('/usr/local/lib/libtorrent-rasterbar.2.0.dylib', 'Frameworks'),
+        ('/usr/local/lib/libtorrent-rasterbar.dylib', 'Frameworks'),
     ],
     datas=[
         (tcl_lib, 'tcl.framework/Versions/Current/Resources'),
