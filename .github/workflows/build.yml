@@ -216,7 +216,7 @@ jobs:
         done
         
         # Install libtorrent using pip
-        BOOST_ROOT=$BOOST_PATH CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" pip3 install --no-binary :all: libtorrent
+        BOOST_ROOT=$BOOST_PATH CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" pip3 install python-libtorrent>=2.0.0
         
         echo "::endgroup::"
         
