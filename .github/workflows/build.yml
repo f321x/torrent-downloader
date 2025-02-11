@@ -239,6 +239,7 @@ jobs:
         echo "::endgroup::"
         
         echo "::group::Generating icons"
+        export DYLD_LIBRARY_PATH="$(brew --prefix cairo)/lib:$DYLD_LIBRARY_PATH"
         python convert_icons.py
         if [ ! -f "icon.icns" ]; then
           echo "::error::icon.icns was not generated"
