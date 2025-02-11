@@ -22,9 +22,10 @@ import sys
 
 def _fix_tkinter():
     if sys.platform == 'darwin':
-        os.environ['TK_LIBRARY'] = '/System/Library/Frameworks/Tk.framework/Versions/Current/Resources'
-        os.environ['TCL_LIBRARY'] = '/System/Library/Frameworks/Tcl.framework/Versions/Current/Resources'
-        os.environ['TKPATH'] = '/System/Library/Frameworks'
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(sys.executable)))
+        os.environ['TK_LIBRARY'] = os.path.join(base_dir, 'Resources', 'tk.framework', 'Versions', 'Current', 'Resources')
+        os.environ['TCL_LIBRARY'] = os.path.join(base_dir, 'Resources', 'tcl.framework', 'Versions', 'Current', 'Resources')
+        os.environ['TKPATH'] = os.path.join(base_dir, 'Resources')
 
 _fix_tkinter()
 """)
@@ -38,8 +39,8 @@ import sys
 def _fix_libtorrent():
     if sys.platform == 'darwin':
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(sys.executable)))
-        os.environ['DYLD_LIBRARY_PATH'] = os.path.join(base_dir, 'Frameworks')
-        sys.path.insert(0, os.path.join(base_dir, 'Frameworks'))
+        os.environ['DYLD_LIBRARY_PATH'] = os.path.join(base_dir, 'Resources')
+        sys.path.insert(0, os.path.join(base_dir, 'Resources'))
 
 _fix_libtorrent()
 """)
@@ -52,14 +53,14 @@ a = Analysis(
         os.path.dirname(python_path),
     ],
     binaries=[
-        ('/usr/local/lib/libtorrent-rasterbar.2.0.11.dylib', 'Frameworks/libtorrent.framework/Versions/Current'),
+        ('/usr/local/lib/libtorrent-rasterbar.2.0.11.dylib', 'libtorrent.framework/Versions/Current'),
         ('/usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so', '.'),
-        ('/usr/local/lib/libtorrent-rasterbar.2.0.dylib', 'Frameworks/libtorrent.framework/Versions/Current'),
-        ('/usr/local/lib/libtorrent-rasterbar.dylib', 'Frameworks/libtorrent.framework/Versions/Current'),
+        ('/usr/local/lib/libtorrent-rasterbar.2.0.dylib', 'libtorrent.framework/Versions/Current'),
+        ('/usr/local/lib/libtorrent-rasterbar.dylib', 'libtorrent.framework/Versions/Current'),
     ],
     datas=[
-        (tcl_lib, 'Frameworks/tcl.framework/Versions/Current/Resources'),
-        (tk_lib, 'Frameworks/tk.framework/Versions/Current/Resources'),
+        (tcl_lib, 'tcl.framework/Versions/Current/Resources'),
+        (tk_lib, 'tk.framework/Versions/Current/Resources'),
     ],
     hiddenimports=[
         'libtorrent',
@@ -128,10 +129,10 @@ app = BUNDLE(
         'LSEnvironment': {
             'PYTHONHOME': '@executable_path/../Resources',
             'PYTHONPATH': '@executable_path/../Resources',
-            'TCL_LIBRARY': '@executable_path/../Frameworks/tcl.framework/Versions/Current/Resources',
-            'TK_LIBRARY': '@executable_path/../Frameworks/tk.framework/Versions/Current/Resources',
-            'DYLD_LIBRARY_PATH': '@executable_path/../Frameworks',
-            'TKPATH': '@executable_path/../Frameworks'
+            'TCL_LIBRARY': '@executable_path/../Resources/tcl.framework/Versions/Current/Resources',
+            'TK_LIBRARY': '@executable_path/../Resources/tk.framework/Versions/Current/Resources',
+            'DYLD_LIBRARY_PATH': '@executable_path/../Resources',
+            'TKPATH': '@executable_path/../Resources'
         },
     }
 ) 
