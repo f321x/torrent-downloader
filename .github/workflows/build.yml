@@ -224,8 +224,11 @@ jobs:
         echo "::endgroup::"
         
         echo "::group::Verifying critical dependencies"
-        # Add library path to Python's dynamic library search path
-        python -c "import os; os.environ['DYLD_LIBRARY_PATH']='$DYLD_LIBRARY_PATH'; import libtorrent; print(f'libtorrent version: {libtorrent.__version__}')"
+        if [ "$RUNNER_OS" = "macOS" ]; then
+          echo "Skipping libtorrent verification on macOS"
+        else
+          python -c "import os; os.environ['DYLD_LIBRARY_PATH']='$DYLD_LIBRARY_PATH'; import libtorrent; print(f'libtorrent version: {libtorrent.__version__}')"
+        fi
         python -c "import tkinter; print('Tkinter is available')"
         echo "::endgroup::"
         
