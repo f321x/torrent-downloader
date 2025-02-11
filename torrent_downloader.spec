@@ -10,8 +10,9 @@ python_path = sys.executable
 python_home = os.path.dirname(os.path.dirname(python_path))
 
 # Add Tkinter dependencies
-tcl_tk_root = '/usr/local/Cellar/tcl-tk/9.0.1'
-tcl_lib = os.path.join(tcl_tk_root, 'lib')
+tcl_tk_root = '/System/Library/Frameworks'
+tcl_lib = os.path.join(tcl_tk_root, 'Tcl.framework/Versions/Current/Resources')
+tk_lib = os.path.join(tcl_tk_root, 'Tk.framework/Versions/Current/Resources')
 
 # Create a runtime hook for Tkinter initialization
 with open('tk_runtime_hook.py', 'w') as f:
@@ -21,10 +22,9 @@ import sys
 
 def _fix_tkinter():
     if sys.platform == 'darwin':
-        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(sys.executable)))
-        os.environ['TK_LIBRARY'] = os.path.join(base_dir, 'Frameworks', 'tk.framework', 'Versions', 'Current', 'Resources')
-        os.environ['TCL_LIBRARY'] = os.path.join(base_dir, 'Frameworks', 'tcl.framework', 'Versions', 'Current', 'Resources')
-        os.environ['TKPATH'] = os.path.join(base_dir, 'Frameworks')
+        os.environ['TK_LIBRARY'] = '/System/Library/Frameworks/Tk.framework/Versions/Current/Resources'
+        os.environ['TCL_LIBRARY'] = '/System/Library/Frameworks/Tcl.framework/Versions/Current/Resources'
+        os.environ['TKPATH'] = '/System/Library/Frameworks'
 
 _fix_tkinter()
 """)
@@ -58,8 +58,8 @@ a = Analysis(
         ('/usr/local/lib/libtorrent-rasterbar.dylib', 'Frameworks/libtorrent.framework/Versions/Current'),
     ],
     datas=[
-        (os.path.join(tcl_tk_root, 'lib', 'tcl9.0'), 'Frameworks/tcl.framework/Versions/Current/Resources'),
-        (os.path.join(tcl_tk_root, 'lib', 'tk9.0'), 'Frameworks/tk.framework/Versions/Current/Resources'),
+        (tcl_lib, 'Frameworks/tcl.framework/Versions/Current/Resources'),
+        (tk_lib, 'Frameworks/tk.framework/Versions/Current/Resources'),
     ],
     hiddenimports=[
         'libtorrent',
