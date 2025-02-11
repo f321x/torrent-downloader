@@ -315,54 +315,50 @@ jobs:
         brew uninstall --ignore-dependencies python@3.13 || true
         
         # Remove conflicting Python symlinks
-        sudo rm -f /usr/local/bin/idle3
-        sudo rm -f /usr/local/bin/idle3.13
-        sudo rm -f /usr/local/bin/pydoc3
-        sudo rm -f /usr/local/bin/pydoc3.13
-        sudo rm -f /usr/local/bin/python3
-        sudo rm -f /usr/local/bin/python3-config
-        sudo rm -f /usr/local/bin/python3.13
-        sudo rm -f /usr/local/bin/python3.13-config
+        sudo rm -f /usr/local/bin/idle3*
+        sudo rm -f /usr/local/bin/pydoc3*
+        sudo rm -f /usr/local/bin/python3*
+        sudo rm -f /usr/local/bin/pip3*
         
-        # Install Python 3.13 from Homebrew
-        arch -x86_64 brew install python@3.13
-        arch -x86_64 brew link --force --overwrite python@3.13
-        
-        # Get Python paths
-        PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-        PYTHON_ROOT=$(brew --prefix python@3.13)
-        echo "Python version: $PYTHON_VERSION"
-        echo "Python root: $PYTHON_ROOT"
-        
-        # Install dependencies with x86_64 architecture
-        arch -x86_64 brew install boost boost-python3 libtorrent-rasterbar cairo pkg-config
+        # Install Python 3.13 from Homebrew with x86_64 architecture
+        arch -x86_64 /bin/bash -c "
+          brew install python@3.13
+          brew link --force --overwrite python@3.13
+          
+          # Install dependencies with x86_64 architecture
+          brew install boost boost-python3 libtorrent-rasterbar cairo pkg-config
+          
+          # Get Python paths
+          PYTHON_VERSION=\$(python3 -c \"import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')\")
+          PYTHON_ROOT=\$(brew --prefix python@3.13)
+          echo \"Python version: \$PYTHON_VERSION\"
+          echo \"Python root: \$PYTHON_ROOT\"
+          
+          # Set environment variables for building Python bindings
+          LIBTORRENT_PATH=\$(brew --prefix libtorrent-rasterbar)
+          BOOST_PATH=\$(brew --prefix boost)
+          export CFLAGS=\"-I\$LIBTORRENT_PATH/include -I\$BOOST_PATH/include\"
+          export LDFLAGS=\"-L\$LIBTORRENT_PATH/lib -L\$BOOST_PATH/lib\"
+          export PKG_CONFIG_PATH=\"\$LIBTORRENT_PATH/lib/pkgconfig:\$BOOST_PATH/lib/pkgconfig\"
+          export DYLD_LIBRARY_PATH=\"\$LIBTORRENT_PATH/lib:\$BOOST_PATH/lib:\$DYLD_LIBRARY_PATH\"
+          
+          # Create symbolic links for the libraries
+          SITE_PACKAGES=\$(python3 -c \"import site; print(site.getsitepackages()[0])\")
+          echo \"Site packages directory: \$SITE_PACKAGES\"
+          
+          # Link the libtorrent library
+          for lib in \$LIBTORRENT_PATH/lib/libtorrent-rasterbar.*.dylib; do
+            sudo ln -sf \"\$lib\" \"\$SITE_PACKAGES/\"
+          done
+        "
         echo "::endgroup::"
         
         echo "::group::Installing Python dependencies"
-        python3 -m pip install --upgrade pip
-        pip3 install -r requirements.txt
-        pip3 install pyinstaller
-        
-        # Install libtorrent Python bindings
-        echo "Installing libtorrent Python bindings..."
-        LIBTORRENT_PATH=$(brew --prefix libtorrent-rasterbar)
-        BOOST_PATH=$(brew --prefix boost)
-        
-        # Set environment variables for building Python bindings
-        export CFLAGS="-I$LIBTORRENT_PATH/include -I$BOOST_PATH/include"
-        export LDFLAGS="-L$LIBTORRENT_PATH/lib -L$BOOST_PATH/lib"
-        export PKG_CONFIG_PATH="$LIBTORRENT_PATH/lib/pkgconfig:$BOOST_PATH/lib/pkgconfig"
-        export DYLD_LIBRARY_PATH="$LIBTORRENT_PATH/lib:$BOOST_PATH/lib:$DYLD_LIBRARY_PATH"
-        
-        # Create symbolic links for the libraries
-        SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
-        echo "Site packages directory: $SITE_PACKAGES"
-        
-        # Link the libtorrent library
-        for lib in $LIBTORRENT_PATH/lib/libtorrent-rasterbar.*.dylib; do
-          sudo ln -sf "$lib" "$SITE_PACKAGES/"
-        done
-        
+        arch -x86_64 /bin/bash -c "
+          python3 -m pip install --upgrade pip
+          pip3 install -r requirements.txt
+          pip3 install pyinstaller
+        "
         echo "::endgroup::"
         
     - name: Generate icons
@@ -384,30 +380,32 @@ jobs:
     - name: Build macOS Intel application
       run: |
         echo "::group::Starting macOS Intel build"
-        sudo mkdir -p /usr/local/lib
-        LIBTORRENT_RASTERBAR=$(find "$(brew --prefix libtorrent-rasterbar)/lib" -type f -name "libtorrent-rasterbar.*.dylib" | head -n1)
-        if [ -z "$LIBTORRENT_RASTERBAR" ]; then
-          echo "Error: libtorrent-rasterbar library not found" 
-          exit 1
-        fi
-        sudo cp "$LIBTORRENT_RASTERBAR" /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib
-        sudo chmod 755 /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib
-        sudo ln -sf /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib /usr/local/lib/libtorrent-rasterbar.2.0.dylib
-        sudo chmod 755 /usr/local/lib/libtorrent-rasterbar.2.0.dylib
-        sudo ln -sf /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib /usr/local/lib/libtorrent-rasterbar.dylib
-        sudo chmod 755 /usr/local/lib/libtorrent-rasterbar.dylib
-        SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
-        sudo cp /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib "$SITE_PACKAGES/libtorrent.cpython-313-darwin.so"
-        sudo chmod 755 "$SITE_PACKAGES/libtorrent.cpython-313-darwin.so"
-        echo "Contents of site-packages ($SITE_PACKAGES):"; sudo ls -la "$SITE_PACKAGES"
-        sudo mkdir -p /usr/local/lib/python3.13/site-packages
-        sudo cp /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib /usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so
-        sudo chmod 755 /usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so
-        echo "Contents of /usr/local/lib/python3.13/site-packages:"; sudo ls -la /usr/local/lib/python3.13/site-packages
-        
-        # Build Intel (x86_64) version
-        echo "Building Intel version..."
-        arch -x86_64 pyinstaller torrent_downloader_intel.spec
+        arch -x86_64 /bin/bash -c "
+          sudo mkdir -p /usr/local/lib
+          LIBTORRENT_RASTERBAR=\$(find \"\$(brew --prefix libtorrent-rasterbar)/lib\" -type f -name \"libtorrent-rasterbar.*.dylib\" | head -n1)
+          if [ -z \"\$LIBTORRENT_RASTERBAR\" ]; then
+            echo \"Error: libtorrent-rasterbar library not found\" 
+            exit 1
+          fi
+          sudo cp \"\$LIBTORRENT_RASTERBAR\" /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib
+          sudo chmod 755 /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib
+          sudo ln -sf /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib /usr/local/lib/libtorrent-rasterbar.2.0.dylib
+          sudo chmod 755 /usr/local/lib/libtorrent-rasterbar.2.0.dylib
+          sudo ln -sf /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib /usr/local/lib/libtorrent-rasterbar.dylib
+          sudo chmod 755 /usr/local/lib/libtorrent-rasterbar.dylib
+          SITE_PACKAGES=\$(python3 -c \"import site; print(site.getsitepackages()[0])\")
+          sudo cp /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib \"\$SITE_PACKAGES/libtorrent.cpython-313-darwin.so\"
+          sudo chmod 755 \"\$SITE_PACKAGES/libtorrent.cpython-313-darwin.so\"
+          echo \"Contents of site-packages (\$SITE_PACKAGES):\"; sudo ls -la \"\$SITE_PACKAGES\"
+          sudo mkdir -p /usr/local/lib/python3.13/site-packages
+          sudo cp /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib /usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so
+          sudo chmod 755 /usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so
+          echo \"Contents of /usr/local/lib/python3.13/site-packages:\"; sudo ls -la /usr/local/lib/python3.13/site-packages
+          
+          # Build Intel (x86_64) version
+          echo \"Building Intel version...\"
+          pyinstaller torrent_downloader_intel.spec
+        "
         
         # Sign all dylibs and binaries in the app bundle
         echo "Signing Intel version..."
