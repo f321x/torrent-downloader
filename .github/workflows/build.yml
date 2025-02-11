@@ -260,8 +260,13 @@ jobs:
         # Build with PyInstaller
         pyinstaller torrent_downloader.spec
         
-        # Sign the app bundle with ad-hoc signature
-        codesign --force --deep --sign "-" --entitlements entitlements.plist --options runtime "dist/TorrentDownloader.app"
+        # Sign all dylibs and binaries in the app bundle
+        find "dist/TorrentDownloader.app" -type f -name "*.dylib" -o -name "*.so" | while read lib; do
+          codesign --force --sign "-" --timestamp --options runtime --entitlements entitlements.plist "$lib"
+        done
+        
+        # Sign the app bundle itself
+        codesign --force --deep --sign "-" --timestamp --options runtime --entitlements entitlements.plist "dist/TorrentDownloader.app"
         
         echo "Build completed. Checking dist directory..."
         ls -la dist

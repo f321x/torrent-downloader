@@ -93,8 +93,8 @@ exe = EXE(
     disable_windowed_traceback=False,
     argv_emulation=True,
     target_arch='universal2',
-    codesign_identity='-',
-    entitlements_file='entitlements.plist',
+    codesign_identity=None,
+    entitlements_file=None,
     icon='icon.icns'
 )
 
