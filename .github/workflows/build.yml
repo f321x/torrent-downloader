@@ -217,21 +217,6 @@ jobs:
         
         echo "::endgroup::"
         
-        echo "::group::Verifying Python installation"
-        python -c "import sys; print(f'Python version: {sys.version}')"
-        python -c "import platform; print(f'Platform: {platform.platform()}')"
-        pip list
-        echo "::endgroup::"
-        
-        echo "::group::Verifying critical dependencies"
-        if [ "$RUNNER_OS" = "macOS" ]; then
-          echo "Skipping libtorrent verification on macOS"
-        else
-          python -c "import os; os.environ['DYLD_LIBRARY_PATH']='$DYLD_LIBRARY_PATH'; import libtorrent; print(f'libtorrent version: {libtorrent.__version__}')"
-        fi
-        python -c "import tkinter; print('Tkinter is available')"
-        echo "::endgroup::"
-        
     - name: Generate icons
       run: |
         echo "::group::Installing CairoSVG dependencies"
@@ -271,7 +256,13 @@ jobs:
         sudo cp /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib /usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so
         sudo chmod 755 /usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so
         echo "Contents of /usr/local/lib/python3.13/site-packages:"; sudo ls -la /usr/local/lib/python3.13/site-packages
+        
+        # Build with PyInstaller
         pyinstaller torrent_downloader.spec
+        
+        # Sign the app bundle with ad-hoc signature
+        codesign --force --deep --sign "-" --entitlements entitlements.plist --options runtime "dist/TorrentDownloader.app"
+        
         echo "Build completed. Checking dist directory..."
         ls -la dist
         if [ ! -d "dist/TorrentDownloader.app" ]; then

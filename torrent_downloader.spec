@@ -91,10 +91,10 @@ exe = EXE(
     upx=True,
     console=False,
     disable_windowed_traceback=False,
-    argv_emulation=False,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
+    argv_emulation=True,
+    target_arch='universal2',
+    codesign_identity='-',
+    entitlements_file='entitlements.plist',
     icon='icon.icns'
 )
 
