@@ -215,9 +215,6 @@ jobs:
           sudo ln -sf "$lib" "$SITE_PACKAGES/"
         done
         
-        # Install libtorrent using pip
-        BOOST_ROOT=$BOOST_PATH CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" pip3 install python-libtorrent>=2.0.0
-        
         echo "::endgroup::"
         
         echo "::group::Verifying Python installation"
