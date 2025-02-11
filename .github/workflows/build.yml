@@ -259,7 +259,7 @@ jobs:
         fi
         sudo cp "$LIBTORRENT_RASTERBAR" /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib
         SITE_PACKAGES=$(python3 -c "import site; print(site.getsitepackages()[0])")
-        sudo ln -sf /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib "$SITE_PACKAGES/libtorrent.cpython-313-darwin.so"
+        sudo cp /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib "$SITE_PACKAGES/libtorrent.cpython-313-darwin.so"
         echo "Contents of /usr/local/lib:"; ls -la /usr/local/lib
         pyinstaller torrent_downloader.spec
         echo "Build completed. Checking dist directory..."
