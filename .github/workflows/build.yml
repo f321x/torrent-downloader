@@ -76,13 +76,12 @@ jobs:
         
         echo "::group::Generating icons"
         cd torrent-downloader-python
-        export DYLD_LIBRARY_PATH="$(brew --prefix cairo)/lib:$DYLD_LIBRARY_PATH"
         python convert_icons.py
-        if [ ! -f "icon.icns" ]; then
-          echo "::error::icon.icns was not generated"
+        if (-not (Test-Path "icon.ico")) {
+          echo "::error::icon.ico was not generated"
           exit 1
-        fi
-        ls -l icon.*
+        }
+        Get-ChildItem icon.*
         echo "::endgroup::"
       
     - name: Build Windows executable
@@ -204,6 +203,7 @@ jobs:
         echo "::endgroup::"
         
         echo "::group::Generating icons"
+        cd torrent-downloader-python
         export DYLD_LIBRARY_PATH="$(brew --prefix cairo)/lib:$DYLD_LIBRARY_PATH"
         python convert_icons.py
         if [ ! -f "icon.icns" ]; then
@@ -348,20 +348,23 @@ jobs:
         echo "::endgroup::"
         
         echo "::group::Generating icons"
-        cd torrent-downloader-python
-        export DYLD_LIBRARY_PATH="$(brew --prefix cairo)/lib:$DYLD_LIBRARY_PATH"
-        python convert_icons.py
-        if [ ! -f "icon.icns" ]; then
-          echo "::error::icon.icns was not generated"
-          exit 1
-        fi
-        ls -l icon.*
+        arch -x86_64 /bin/bash -c "
+          cd torrent-downloader-python
+          export DYLD_LIBRARY_PATH=\"\$(brew --prefix cairo)/lib:\$DYLD_LIBRARY_PATH\"
+          python3 convert_icons.py
+          if [ ! -f \"icon.icns\" ]; then
+            echo \"::error::icon.icns was not generated\"
+            exit 1
+          fi
+          ls -l icon.*
+        "
         echo "::endgroup::"
       
     - name: Build macOS Intel application
       run: |
         echo "::group::Starting macOS Intel build"
         arch -x86_64 /bin/bash -c "
+          cd torrent-downloader-python
           sudo mkdir -p /usr/local/lib
           LIBTORRENT_RASTERBAR=\$(find \"\$(brew --prefix libtorrent-rasterbar)/lib\" -type f -name \"libtorrent-rasterbar.*.dylib\" | head -n1)
           if [ -z \"\$LIBTORRENT_RASTERBAR\" ]; then
