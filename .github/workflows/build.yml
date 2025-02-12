@@ -7,6 +7,10 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+defaults:
+  run:
+    working-directory: torrent-downloader-python
+
 jobs:
   build-windows:
     runs-on: windows-latest
