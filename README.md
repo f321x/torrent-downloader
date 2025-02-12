@@ -1,95 +1,28 @@
 # Torrent Downloader
 
-A modern, cross-platform torrent downloading application with a clean and intuitive graphical interface.
+A cross-platform torrent downloading application with a simple, user-friendly interface.
 
-## Features
+## Implementations
 
-- 🎯 Modern and intuitive graphical user interface
-- 🔍 Easy magnet link handling
-- 📊 Real-time download progress tracking
-- 📈 Live download/upload speed monitoring
-- 👥 Peer connection status
-- ⏱️ Accurate ETA calculations
-- 📁 Platform-specific download locations
-- 🌍 Full cross-platform support (Windows, macOS, Linux)
-- 🎨 High-resolution application icons
-- 📝 Comprehensive logging system
+### Python Version (Original)
+Located in the `torrent-downloader-python/` directory, this implementation uses:
+- Python with Tkinter for the GUI
+- libtorrent-rasterbar for torrent handling
+- PyInstaller for creating standalone executables
 
-## Installation
+### Rust Version (In Development)
+Located in the `torrent-downloader-tauri/` directory, this implementation uses:
+- Rust with Tauri for the backend
+- React for the frontend UI
+- libtorrent-rust for torrent handling
 
-### Windows
-1. Download the latest `TorrentDownloader.exe` from the releases page
-2. Double-click to run the application
-3. On first run, Windows may show a security prompt - click "More info" and "Run anyway"
+## Building and Running
 
-### macOS
-1. Download the latest `TorrentDownloader.app` from the releases page
-2. Move to your Applications folder
-3. Right-click and select "Open" (required only the first time due to security settings)
-4. If you see "App can't be opened", go to System Preferences → Security & Privacy → General and click "Open Anyway"
+### Python Version
+See instructions in `torrent-downloader-python/README.md`
 
-### Linux
-1. Download the latest `TorrentDownloader` AppImage from the releases page
-2. Make it executable: `chmod +x TorrentDownloader.AppImage`
-3. Double-click to run or execute from terminal
-
-### Building from Source
-
-#### Prerequisites
-- Python 3.7 or higher
-- pip (Python package manager)
-- libtorrent-rasterbar
-
-#### Setup
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/yourusername/torrent_downloader.git
-   cd torrent_downloader
-   ```
-
-2. Create and activate a virtual environment (recommended):
-   ```bash
-   python -m venv venv
-   # On Windows:
-   venv\Scripts\activate
-   # On macOS/Linux:
-   source venv/bin/activate
-   ```
-
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-#### Building
-
-##### Windows
-```bash
-python convert_icons.py  # Generate icons
-pyinstaller torrent_downloader_win.spec
-```
-
-##### macOS
-```bash
-python convert_icons.py  # Generate icons
-pyinstaller torrent_downloader.spec
-```
-
-The packaged application will be created in the `dist` directory.
-
-## Usage
-
-1. Launch TorrentDownloader
-2. Paste a magnet link into the text field
-3. Click "Add Magnet" to start downloading
-4. Monitor download progress in the main window
-5. Access downloaded files through the "File → Open Download Folder" menu
-
-## Default Download Locations
-
-- Windows: `%USERPROFILE%\Downloads\TorrentDownloader`
-- macOS: `~/Downloads/TorrentDownloader`
-- Linux: `~/Downloads/TorrentDownloader` or `$XDG_DOWNLOAD_DIR/TorrentDownloader`
+### Rust Version
+Coming soon...
 
 ## License
 
