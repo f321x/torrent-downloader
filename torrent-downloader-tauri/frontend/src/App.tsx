@@ -1,35 +1,45 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect } from 'react';
+import { MantineProvider, Box, Title, Container, Stack } from '@mantine/core';
+import { AddTorrent } from './components/AddTorrent';
+import { TorrentList } from './components/TorrentList';
+import { useTorrentStore } from './store/torrentStore';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const initialize = useTorrentStore(state => state.initialize);
+
+  useEffect(() => {
+    initialize().catch(console.error);
+  }, [initialize]);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <MantineProvider
+      theme={{
+        primaryColor: 'blue',
+        components: {
+          Container: {
+            defaultProps: {
+              size: 'lg',
+            },
+          },
+        },
+      }}
+    >
+      <Box>
+        <Box py="xs" mb="md" style={{ borderBottom: '1px solid #eee' }}>
+          <Container size="lg">
+            <Title order={1} size="h3">Torrent Downloader</Title>
+          </Container>
+        </Box>
+
+        <Container>
+          <Stack gap="md">
+            <AddTorrent />
+            <TorrentList />
+          </Stack>
+        </Container>
+      </Box>
+    </MantineProvider>
+  );
 }
 
-export default App
+export default App;
