@@ -237,8 +237,9 @@ jobs:
         sudo chmod 755 /usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so
         echo "Contents of /usr/local/lib/python3.13/site-packages:"; sudo ls -la /usr/local/lib/python3.13/site-packages
         
-        # Build Apple Silicon (arm64) version
+        # Build arm64 version...
         echo "Building arm64 version..."
+        cd torrent-downloader-python
         pyinstaller torrent_downloader.spec
         
         # Sign all dylibs and binaries in the app bundle
@@ -363,33 +364,31 @@ jobs:
     - name: Build macOS Intel application
       run: |
         echo "::group::Starting macOS Intel build"
-        arch -x86_64 /bin/bash -c "
-          cd torrent-downloader-python
-          sudo mkdir -p /usr/local/lib
-          LIBTORRENT_RASTERBAR=\$(find \"\$(brew --prefix libtorrent-rasterbar)/lib\" -type f -name \"libtorrent-rasterbar.*.dylib\" | head -n1)
-          if [ -z \"\$LIBTORRENT_RASTERBAR\" ]; then
-            echo \"Error: libtorrent-rasterbar library not found\" 
-            exit 1
-          fi
-          sudo cp \"\$LIBTORRENT_RASTERBAR\" /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib
-          sudo chmod 755 /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib
-          sudo ln -sf /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib /usr/local/lib/libtorrent-rasterbar.2.0.dylib
-          sudo chmod 755 /usr/local/lib/libtorrent-rasterbar.2.0.dylib
-          sudo ln -sf /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib /usr/local/lib/libtorrent-rasterbar.dylib
-          sudo chmod 755 /usr/local/lib/libtorrent-rasterbar.dylib
-          SITE_PACKAGES=\$(python3 -c \"import site; print(site.getsitepackages()[0])\")
-          sudo cp /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib \"\$SITE_PACKAGES/libtorrent.cpython-313-darwin.so\"
-          sudo chmod 755 \"\$SITE_PACKAGES/libtorrent.cpython-313-darwin.so\"
-          echo \"Contents of site-packages (\$SITE_PACKAGES):\"; sudo ls -la \"\$SITE_PACKAGES\"
-          sudo mkdir -p /usr/local/lib/python3.13/site-packages
-          sudo cp /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib /usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so
-          sudo chmod 755 /usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so
-          echo \"Contents of /usr/local/lib/python3.13/site-packages:\"; sudo ls -la /usr/local/lib/python3.13/site-packages
-          
-          # Build Intel (x86_64) version
-          echo \"Building Intel version...\"
-          pyinstaller torrent_downloader_intel.spec
-        "
+        cd torrent-downloader-python
+        sudo mkdir -p /usr/local/lib
+        LIBTORRENT_RASTERBAR=\$(find \"\$(brew --prefix libtorrent-rasterbar)/lib\" -type f -name \"libtorrent-rasterbar.*.dylib\" | head -n1)
+        if [ -z \"\$LIBTORRENT_RASTERBAR\" ]; then
+          echo \"Error: libtorrent-rasterbar library not found\" 
+          exit 1
+        fi
+        sudo cp \"\$LIBTORRENT_RASTERBAR\" /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib
+        sudo chmod 755 /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib
+        sudo ln -sf /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib /usr/local/lib/libtorrent-rasterbar.2.0.dylib
+        sudo chmod 755 /usr/local/lib/libtorrent-rasterbar.2.0.dylib
+        sudo ln -sf /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib /usr/local/lib/libtorrent-rasterbar.dylib
+        sudo chmod 755 /usr/local/lib/libtorrent-rasterbar.dylib
+        SITE_PACKAGES=\$(python3 -c \"import site; print(site.getsitepackages()[0])\")
+        sudo cp /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib \"\$SITE_PACKAGES/libtorrent.cpython-313-darwin.so\"
+        sudo chmod 755 \"\$SITE_PACKAGES/libtorrent.cpython-313-darwin.so\"
+        echo \"Contents of site-packages (\$SITE_PACKAGES):\"; sudo ls -la \"\$SITE_PACKAGES\"
+        sudo mkdir -p /usr/local/lib/python3.13/site-packages
+        sudo cp /usr/local/lib/libtorrent-rasterbar.2.0.11.dylib /usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so
+        sudo chmod 755 /usr/local/lib/python3.13/site-packages/libtorrent.cpython-313-darwin.so
+        echo \"Contents of /usr/local/lib/python3.13/site-packages:\"; sudo ls -la /usr/local/lib/python3.13/site-packages
+        
+        # Build Intel (x86_64) version
+        echo \"Building Intel version...\"
+        pyinstaller torrent_downloader_intel.spec
         
         # Sign all dylibs and binaries in the app bundle
         echo "Signing Intel version..."
