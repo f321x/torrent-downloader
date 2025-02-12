@@ -70,43 +70,19 @@ jobs:
         
     - name: Generate icons
       run: |
+        echo "::group::Installing CairoSVG dependencies"
+        pip install cairosvg pillow
+        echo "::endgroup::"
+        
         echo "::group::Generating icons"
-        # Add MSYS2 bin to PATH for the Cairo DLLs
-        $env:PATH = "${{ github.workspace }}/msys64/mingw64/bin;$env:PATH"
         cd torrent-downloader-python
-        
-        # Create Python script and write it using Set-Content
-        $script = @'
-        try:
-            import cairosvg
-            import os
-            from PIL import Image
-            print("Attempting to convert SVG using CairoSVG...")
-            cairosvg.svg2png(url="icon.svg", write_to="icon_256.png", output_width=256, output_height=256)
-        except Exception as e:
-            print("CairoSVG failed: " + str(e))
-            print("Falling back to PIL for direct PNG to ICO conversion...")
-            from PIL import Image
-            img = Image.new("RGB", (256, 256), "#2196F3")
-            from PIL import ImageDraw
-            draw = ImageDraw.Draw(img)
-            draw.rectangle((120, 60, 136, 160), fill="white")
-            points = [(80, 140), (128, 196), (176, 140)]
-            draw.polygon(points, fill="white")
-            img.save("icon_256.png")
-        img = Image.open("icon_256.png")
-        img.save("icon.ico", format="ICO", sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
-        print("Icon generation completed successfully")
-        '@
-        Set-Content -Path generate_icons.py -Value $script -Encoding UTF8
-        
-        # Execute the script
-        python generate_icons.py
-        
-        if (-not (Test-Path "icon.ico")) {
-          echo "::error::icon.ico was not generated"
+        export DYLD_LIBRARY_PATH="$(brew --prefix cairo)/lib:$DYLD_LIBRARY_PATH"
+        python convert_icons.py
+        if [ ! -f "icon.icns" ]; then
+          echo "::error::icon.icns was not generated"
           exit 1
-        }
+        fi
+        ls -l icon.*
         echo "::endgroup::"
       
     - name: Build Windows executable
@@ -372,6 +348,7 @@ jobs:
         echo "::endgroup::"
         
         echo "::group::Generating icons"
+        cd torrent-downloader-python
         export DYLD_LIBRARY_PATH="$(brew --prefix cairo)/lib:$DYLD_LIBRARY_PATH"
         python convert_icons.py
         if [ ! -f "icon.icns" ]; then
