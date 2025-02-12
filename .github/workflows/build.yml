@@ -75,6 +75,12 @@ jobs:
         echo "::endgroup::"
         
         echo "::group::Generating icons"
+        # Add MSYS2 bin directory to PATH for Cairo DLLs
+        $env:PATH = "${{ github.workspace }}/msys64/mingw64/bin;$env:PATH"
+        
+        # Set PKG_CONFIG_PATH for Cairo
+        $env:PKG_CONFIG_PATH = "${{ github.workspace }}/msys64/mingw64/lib/pkgconfig"
+        
         cd torrent-downloader-python
         python convert_icons.py
         if (-not (Test-Path "icon.ico")) {
