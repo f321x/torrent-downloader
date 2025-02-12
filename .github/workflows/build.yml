@@ -195,6 +195,7 @@ jobs:
         
         echo "::group::Installing Python dependencies"
         python3 -m pip install --upgrade pip
+        cd torrent-downloader-python
         pip3 install -r requirements.txt
         pip3 install pyinstaller
         
