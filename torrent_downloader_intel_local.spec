@@ -10,7 +10,7 @@ block_cipher = None
 python_path = sys.executable
 python_home = os.path.dirname(os.path.dirname(python_path))
 
-# Add Tkinter dependencies
+# Add Tkinter dependencies - use system frameworks
 tcl_tk_root = '/System/Library/Frameworks'
 tcl_lib = os.path.join(tcl_tk_root, 'Tcl.framework/Versions/Current/Resources')
 tk_lib = os.path.join(tcl_tk_root, 'Tk.framework/Versions/Current/Resources')
@@ -20,13 +20,55 @@ with open('tk_runtime_hook.py', 'w') as f:
     f.write("""
 import os
 import sys
+import platform
 
 def _fix_tkinter():
     if sys.platform == 'darwin':
-        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(sys.executable)))
-        os.environ['TK_LIBRARY'] = os.path.join(base_dir, 'Frameworks', 'tk', 'Resources')
-        os.environ['TCL_LIBRARY'] = os.path.join(base_dir, 'Frameworks', 'tcl', 'Resources')
-        os.environ['TKPATH'] = os.path.join(base_dir, 'Frameworks')
+        # Get the base directory (where the .app bundle is)
+        if getattr(sys, 'frozen', False):
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(sys.executable)))
+            
+            # Set Tk/Tcl library paths relative to the app bundle
+            os.environ['TK_LIBRARY'] = os.path.join(base_dir, 'Frameworks', 'tk', 'Resources')
+            os.environ['TCL_LIBRARY'] = os.path.join(base_dir, 'Frameworks', 'tcl', 'Resources')
+            os.environ['TKPATH'] = os.path.join(base_dir, 'Frameworks')
+            
+            # Force disable all menu-related features
+            os.environ['TK_SILENCE_DEPRECATION'] = '1'
+            os.environ['TK_NO_NATIVE_MENUBAR'] = '1'
+            os.environ['TKPATH'] = '/System/Library/Frameworks'
+            
+            # Use system Tcl/Tk frameworks
+            os.environ['TCL_LIBRARY'] = '/System/Library/Frameworks/Tcl.framework/Versions/Current/Resources'
+            os.environ['TK_LIBRARY'] = '/System/Library/Frameworks/Tk.framework/Versions/Current/Resources'
+            
+            # Additional environment variables to control Tk behavior
+            os.environ['TK_COCOA_FORCE_WINDOW_MENU'] = '0'
+            os.environ['TK_COCOA_USE_SYSTEM_MENUBAR'] = '0'
+            os.environ['TK_COCOA_DISABLE_MENUBAR'] = '1'
+            
+            # Patch Tkinter's _tkinter module to prevent menu creation
+            try:
+                import _tkinter
+                def _patched_call(*args, **kwargs):
+                    cmd = args[0] if args else ''
+                    if isinstance(cmd, str) and ('menu' in cmd.lower() or 'menubar' in cmd.lower()):
+                        return None
+                    return original_call(*args, **kwargs)
+                
+                if hasattr(_tkinter, 'TkappType'):
+                    if hasattr(_tkinter.TkappType, 'call'):
+                        original_call = _tkinter.TkappType.call
+                        _tkinter.TkappType.call = _patched_call
+            except Exception as e:
+                print("Failed to patch Tkinter:", e)
+        
+        # Additional debug info
+        print("Python executable:", sys.executable)
+        print("TK_LIBRARY:", os.environ.get('TK_LIBRARY'))
+        print("TCL_LIBRARY:", os.environ.get('TCL_LIBRARY'))
+        print("TKPATH:", os.environ.get('TKPATH'))
+        print("TK_NO_NATIVE_MENUBAR:", os.environ.get('TK_NO_NATIVE_MENUBAR'))
 
 _fix_tkinter()
 """)
@@ -102,6 +144,8 @@ a = Analysis(
         'tkinter',
         'tkinter.ttk',
         '_tkinter',
+        'tkinter.messagebox',
+        'tkinter.filedialog',
     ],
     hookspath=[],
     hooksconfig={},
@@ -164,10 +208,15 @@ app = BUNDLE(
         'LSEnvironment': {
             'PYTHONHOME': '@executable_path/../Resources',
             'PYTHONPATH': '@executable_path/../Resources:@executable_path/../Frameworks/libtorrent',
-            'TCL_LIBRARY': '@executable_path/../Frameworks/tcl/Resources',
-            'TK_LIBRARY': '@executable_path/../Frameworks/tk/Resources',
+            'TCL_LIBRARY': '/System/Library/Frameworks/Tcl.framework/Versions/Current/Resources',
+            'TK_LIBRARY': '/System/Library/Frameworks/Tk.framework/Versions/Current/Resources',
             'DYLD_LIBRARY_PATH': '@executable_path/../Frameworks/libtorrent:@executable_path/../Frameworks',
-            'TKPATH': '@executable_path/../Frameworks'
+            'TKPATH': '/System/Library/Frameworks',
+            'TK_SILENCE_DEPRECATION': '1',
+            'TK_NO_NATIVE_MENUBAR': '1',
+            'TK_COCOA_FORCE_WINDOW_MENU': '0',
+            'TK_COCOA_USE_SYSTEM_MENUBAR': '0',
+            'TK_COCOA_DISABLE_MENUBAR': '1'
         },
     }
 ) 

@@ -120,16 +120,39 @@ class TorrentDownloaderApp:
         master.title("Torrent Downloader")
         master.geometry("1000x600")
         
-        # Create a custom menu bar frame
-        self.menu_bar = ttk.Frame(master)
-        self.menu_bar.pack(side=tk.TOP, fill=tk.X)
+        # Apply menu prevention patches
+        if sys.platform == 'darwin':
+            try:
+                # Disable window manager decorations that might trigger menu creation
+                master.overrideredirect(True)
+                master.overrideredirect(False)
+                
+                # Apply our Tcl interpreter patches
+                if hasattr(master.tk, '_patch_tcl_interpreter'):
+                    master.tk._patch_tcl_interpreter(master)
+                
+                # Prevent any menu-related calls
+                master.createcommand = lambda *args: None
+                master.tk.call = lambda *args: None if 'menu' in str(args).lower() else master.tk.call(*args)
+                
+                # Force update to ensure changes take effect
+                master.update_idletasks()
+            except Exception:
+                pass
         
-        # Add menu buttons
-        self.file_button = ttk.Button(self.menu_bar, text="File", command=self.show_file_menu)
-        self.file_button.pack(side=tk.LEFT, padx=5)
+        # Create a custom toolbar frame
+        self.toolbar = ttk.Frame(master)
+        self.toolbar.pack(side=tk.TOP, fill=tk.X)
         
-        self.help_button = ttk.Button(self.menu_bar, text="Help", command=self.show_help)
-        self.help_button.pack(side=tk.LEFT, padx=5)
+        # Add toolbar buttons
+        self.open_folder_button = ttk.Button(self.toolbar, text="Open Downloads", command=self.open_download_folder)
+        self.open_folder_button.pack(side=tk.LEFT, padx=5, pady=5)
+        
+        self.help_button = ttk.Button(self.toolbar, text="Help", command=self.show_help)
+        self.help_button.pack(side=tk.LEFT, padx=5, pady=5)
+        
+        self.quit_button = ttk.Button(self.toolbar, text="Quit", command=self.quit_app)
+        self.quit_button.pack(side=tk.RIGHT, padx=5, pady=5)
         
         # Configure style
         self.style = ttk.Style()
@@ -141,7 +164,7 @@ class TorrentDownloaderApp:
         self.main_container = ttk.Frame(master, padding="10")
         self.main_container.pack(fill=tk.BOTH, expand=True)
 
-        # Top frame for magnet link entry and buttons
+        # Top frame for magnet link entry
         self.frame_top = ttk.Frame(self.main_container)
         self.frame_top.pack(fill=tk.X, pady=(0, 10))
 
@@ -153,9 +176,6 @@ class TorrentDownloaderApp:
 
         self.add_button = ttk.Button(self.frame_top, text="Add Magnet", command=self.add_magnet)
         self.add_button.pack(side=tk.LEFT, padx=5)
-
-        self.quit_button = ttk.Button(self.frame_top, text="Quit", command=self.quit_app)
-        self.quit_button.pack(side=tk.RIGHT)
 
         # Status frame with Treeview
         self.frame_status = ttk.Frame(self.main_container)
@@ -232,40 +252,34 @@ class TorrentDownloaderApp:
 
         self.handles = []
         self.update_status()
-        
-        # Create file menu
-        self.file_menu = tk.Menu(master, tearoff=0)
-        self.file_menu.add_command(label="Open Download Folder", command=self.open_download_folder)
-        self.file_menu.add_separator()
-        self.file_menu.add_command(label="Exit", command=self.quit_app)
-
-    def show_file_menu(self):
-        try:
-            x = self.file_button.winfo_rootx()
-            y = self.file_button.winfo_rooty() + self.file_button.winfo_height()
-            self.file_menu.post(x, y)
-        except Exception as e:
-            print(f"Error showing file menu: {e}")
 
     def show_help(self):
-        messagebox.showinfo("Help", 
-            "Torrent Downloader Help\n\n"
-            "1. Paste a magnet link into the text field\n"
-            "2. Click 'Add Magnet' to start downloading\n"
-            "3. Monitor progress in the main window\n"
-            f"4. {self.download_location_text}\n\n"
-            "Version: 1.0.0")
+        help_text = f"""
+Torrent Downloader Help
+
+1. Enter a magnet link in the text field
+2. Click 'Add Magnet' to start downloading
+3. Monitor progress in the list below
+
+{self.download_location_text}
+
+For support, please visit:
+https://github.com/yourusername/torrent_downloader
+"""
+        messagebox.showinfo("Help", help_text)
 
     def open_download_folder(self):
+        """Open the downloads folder in the system file explorer."""
         try:
-            if sys.platform == 'darwin':
+            if sys.platform == 'win32':
+                os.startfile(self.download_dir)
+            elif sys.platform == 'darwin':
                 os.system(f'open "{self.download_dir}"')
-            elif sys.platform == 'win32':
-                os.system(f'explorer "{self.download_dir}"')
             else:
                 os.system(f'xdg-open "{self.download_dir}"')
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to open download folder: {e}")
+            logging.error(f"Failed to open downloads folder: {e}")
+            messagebox.showerror("Error", f"Could not open downloads folder:\n{e}")
 
     def add_magnet(self):
         magnet_link = self.magnet_entry.get().strip()
