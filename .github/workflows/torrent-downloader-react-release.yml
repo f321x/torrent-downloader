@@ -94,7 +94,7 @@ jobs:
         working-directory: ./torrent-downloader-react/backend
         run: |
           python build.py
-          pyinstaller --onefile --windowed --icon=torrent_downloader/static/favicon.ico --name=torrent-downloader-react torrent_downloader/server.py
+          pyinstaller --onefile --windowed --name=torrent-downloader-react torrent_downloader/server.py
       
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
@@ -138,7 +138,7 @@ jobs:
         working-directory: ./torrent-downloader-react/backend
         run: |
           python build.py
-          pyinstaller --onefile --windowed --icon=torrent_downloader/static/favicon.icns --name=torrent-downloader-react torrent_downloader/server.py
+          pyinstaller --onefile --windowed --name=torrent-downloader-react torrent_downloader/server.py
       
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
