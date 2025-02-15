@@ -10,7 +10,8 @@ on:
       - 'react-v*'
 
 jobs:
-  create-release:
+  create-pypi-release:
+    name: Create PyPI Release
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -69,8 +70,9 @@ jobs:
         working-directory: ./torrent-downloader-react/backend
         run: twine upload dist/*
 
-  build-windows:
-    needs: create-release
+  build-windows-executable:
+    name: Build Windows Executable
+    needs: create-pypi-release
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -112,8 +114,9 @@ jobs:
         with:
           files: torrent-downloader-react/backend/dist/torrent-downloader-react.exe
 
-  build-macos:
-    needs: create-release
+  build-macos-executable:
+    name: Build macOS Executable
+    needs: create-pypi-release
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
