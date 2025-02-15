@@ -10,16 +10,42 @@ A modern, user-friendly torrent downloader application built with React and Pyth
 - Easy-to-use magnet link support
 - Dark mode support
 
+## Prerequisites
+
+Before installing, make sure you have the required system dependencies:
+
+### Windows
+- Python 3.8 or higher
+- Microsoft Visual C++ Redistributable (latest version)
+
+### macOS
+```bash
+brew install libtorrent-rasterbar
+```
+
+### Linux (Ubuntu/Debian)
+```bash
+sudo apt-get update
+sudo apt-get install python3-libtorrent
+```
+
+### Linux (Fedora)
+```bash
+sudo dnf install rb_libtorrent-python3
+```
+
 ## Installation
 
 ### Method 1: Using pip (Recommended)
 
 ```bash
+# Install system dependencies (see Prerequisites section above)
+
 # Install the package
-pip install torrent-downloader
+pip install torrent-downloader-react
 
 # Run the application
-torrent-downloader
+torrent-downloader-react
 ```
 
 The application will start and open in your default web browser at http://127.0.0.1:8000
