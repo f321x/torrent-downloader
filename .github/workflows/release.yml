@@ -1,0 +1,155 @@
+name: Create React Version Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+    paths:
+      - 'torrent-downloader-react/**'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: './torrent-downloader-react/backend/requirements.txt'
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './torrent-downloader-react/package-lock.json'
+      
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libtorrent-rasterbar-dev
+      
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+          cd torrent-downloader-react/backend
+          pip install -r requirements.txt
+      
+      - name: Install Node.js dependencies
+        working-directory: ./torrent-downloader-react
+        run: npm ci
+      
+      - name: Build package
+        working-directory: ./torrent-downloader-react/backend
+        run: python build.py
+      
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            torrent-downloader-react/backend/dist/*.whl
+            torrent-downloader-react/backend/dist/*.tar.gz
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+      
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        working-directory: ./torrent-downloader-react/backend
+        run: twine upload dist/*
+
+  build-windows:
+    needs: create-release
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          cd torrent-downloader-react/backend
+          pip install -r requirements.txt
+          cd ..
+          npm ci
+      
+      - name: Build Windows executable
+        working-directory: ./torrent-downloader-react/backend
+        run: |
+          python build.py
+          pyinstaller --onefile --windowed --icon=torrent_downloader/static/favicon.ico --name=torrent-downloader-react torrent_downloader/server.py
+      
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-executable
+          path: torrent-downloader-react/backend/dist/torrent-downloader-react.exe
+      
+      - name: Update Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: torrent-downloader-react/backend/dist/torrent-downloader-react.exe
+
+  build-macos:
+    needs: create-release
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: |
+          brew install libtorrent-rasterbar
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          cd torrent-downloader-react/backend
+          pip install -r requirements.txt
+          cd ..
+          npm ci
+      
+      - name: Build macOS application
+        working-directory: ./torrent-downloader-react/backend
+        run: |
+          python build.py
+          pyinstaller --onefile --windowed --icon=torrent_downloader/static/favicon.icns --name=torrent-downloader-react torrent_downloader/server.py
+      
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-executable
+          path: torrent-downloader-react/backend/dist/torrent-downloader-react
+      
+      - name: Update Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: torrent-downloader-react/backend/dist/torrent-downloader-react 
