@@ -10,10 +10,14 @@ else:
 
 setup(
     name="torrent-downloader-python",
-    version="1.1.1",
+    version="1.1.2",
     description='A Torrent Downloader with a graphical user interface built using Tkinter and libtorrent',
-    author='Your Name',
-    author_email='your_email@example.com',
+    long_description=open('README.md').read(),
+    long_description_content_type='text/markdown',
+    author='Steven Yan',
+    author_email='yulong.yan@uqconnect.edu.au',
+    url='https://github.com/steven/torrent-downloader',
+    packages=find_packages(),
     py_modules=['torrent_downloader_gui'],
     install_requires=[
         'python-libtorrent'
@@ -22,5 +26,19 @@ setup(
         'console_scripts': [
             'torrent-downloader = torrent_downloader_gui:main'
         ]
-    }
+    },
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Intended Audience :: End Users/Desktop',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+        'Operating System :: OS Independent',
+        'Topic :: Internet :: File Transfer Protocol (FTP)',
+    ],
+    python_requires='>=3.8',
 ) 
