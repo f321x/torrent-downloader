@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import libtorrent as lt
 import os
@@ -20,6 +22,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Get the directory containing the static files
+static_dir = Path(__file__).parent / "static"
+
+# Mount static files
+app.mount("/assets", StaticFiles(directory=str(static_dir / "assets")), name="assets")
+
+@app.get("/")
+async def read_root():
+    return FileResponse(str(static_dir / "index.html"))
+
+@app.get("/favicon.ico")
+async def favicon():
+    return FileResponse(str(static_dir / "favicon.ico"))
 
 # Set up platform-specific paths
 def get_downloads_dir() -> Path:

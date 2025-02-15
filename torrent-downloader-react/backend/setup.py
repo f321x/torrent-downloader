@@ -7,7 +7,7 @@ with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "README.md"),
 
 setup(
     name="torrent-downloader-react",
-    version="1.0.11",
+    version="1.0.12",
     packages=find_packages(),
     install_requires=[
         "fastapi>=0.109.0",
