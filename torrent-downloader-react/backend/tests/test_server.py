@@ -3,7 +3,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from pathlib import Path
 import os
-from torrent_downloader.server import app, static_dir
+from torrent_downloader.server import app, static_dir, setup_static_files
 
 # Create a pytest fixture to handle static directory setup
 @pytest.fixture(autouse=True)
@@ -23,8 +23,13 @@ def setup_static_dir(tmp_path):
     with open(test_static / "favicon.ico", "wb") as f:
         f.write(b"")
     
+    # Create a dummy asset file
+    with open(test_assets / "test.js", "w") as f:
+        f.write("console.log('test');")
+    
     # Patch the static_dir path
     with patch("torrent_downloader.server.static_dir", test_static):
+        setup_static_files()  # Set up static files after patching
         yield
 
 # Create the test client
@@ -36,6 +41,19 @@ def test_read_root(setup_static_dir):
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
     assert b"<html><body>Test</body></html>" in response.content
+
+def test_favicon(setup_static_dir):
+    """Test that the favicon endpoint serves the favicon.ico file."""
+    response = client.get("/favicon.ico")
+    assert response.status_code == 200
+    assert "image/x-icon" in response.headers["content-type"]
+
+def test_static_assets(setup_static_dir):
+    """Test that static assets are served correctly."""
+    response = client.get("/assets/test.js")
+    assert response.status_code == 200
+    assert "application/javascript" in response.headers["content-type"]
+    assert b"console.log('test');" in response.content
 
 def test_get_downloads_path():
     """Test that the downloads path endpoint returns a valid path."""

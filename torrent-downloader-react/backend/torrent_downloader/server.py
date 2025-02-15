@@ -26,8 +26,12 @@ app.add_middleware(
 # Get the directory containing the static files
 static_dir = Path(__file__).parent / "static"
 
-# Mount static files
-app.mount("/assets", StaticFiles(directory=str(static_dir / "assets")), name="assets")
+def setup_static_files():
+    """Set up static file serving. Called after app creation."""
+    if static_dir.exists():
+        # Mount static files only if the directory exists
+        if (static_dir / "assets").exists():
+            app.mount("/assets", StaticFiles(directory=str(static_dir / "assets")), name="assets")
 
 @app.get("/")
 async def read_root():
@@ -164,6 +168,7 @@ async def open_downloads():
 def main():
     """Entry point for the application."""
     import uvicorn
+    setup_static_files()  # Set up static files before running
     uvicorn.run(app, host="127.0.0.1", port=8000)
 
 if __name__ == "__main__":
