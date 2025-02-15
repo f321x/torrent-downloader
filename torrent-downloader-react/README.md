@@ -17,21 +17,47 @@ Before installing, make sure you have the required system dependencies:
 ### Windows
 - Python 3.8 or higher
 - Microsoft Visual C++ Redistributable (latest version)
+- Libtorrent:
+  ```bash
+  # Option 1: Using pip
+  pip install python-libtorrent
+
+  # Option 2: Using conda
+  conda install -c conda-forge libtorrent
+  ```
 
 ### macOS
 ```bash
+# Using Homebrew (recommended)
 brew install libtorrent-rasterbar
+
+# Or using conda
+conda install -c conda-forge libtorrent
 ```
 
 ### Linux (Ubuntu/Debian)
 ```bash
 sudo apt-get update
 sudo apt-get install python3-libtorrent
+
+# Or using conda
+conda install -c conda-forge libtorrent
 ```
 
 ### Linux (Fedora)
 ```bash
 sudo dnf install rb_libtorrent-python3
+
+# Or using conda
+conda install -c conda-forge libtorrent
+```
+
+### Using Conda (All Platforms)
+If you're using Conda, you can install libtorrent in your environment:
+```bash
+conda create -n torrent-env python=3.11
+conda activate torrent-env
+conda install -c conda-forge libtorrent
 ```
 
 ## Installation
@@ -39,12 +65,12 @@ sudo dnf install rb_libtorrent-python3
 ### Method 1: Using pip (Recommended)
 
 ```bash
-# Install system dependencies (see Prerequisites section above)
+# 1. Install libtorrent (see Prerequisites section above)
 
-# Install the package
+# 2. Install the package
 pip install torrent-downloader-react
 
-# Run the application
+# 3. Run the application
 torrent-downloader-react
 ```
 
