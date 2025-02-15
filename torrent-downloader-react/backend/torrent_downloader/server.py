@@ -92,6 +92,7 @@ class TorrentInfo(BaseModel):
     state: str
     total_size: int
     downloaded: int
+    eta_seconds: Optional[int] = None
 
 @app.post("/api/torrent/add")
 async def add_torrent(request: TorrentRequest):
@@ -132,10 +133,27 @@ async def list_torrents() -> List[TorrentInfo]:
             state_str = "finished"
         elif status.state == lt.torrent_status.checking_files:
             state_str = "checking"
-        elif status.state == lt.torrent_status.paused:
-            state_str = "paused"
         
         logging.debug(f"Torrent {torrent_id} state: {state_str} (raw state: {status.state})")
+        
+        # Calculate ETA
+        eta = None
+        try:
+            if state_str == "downloading":
+                remaining_bytes = status.total_wanted - status.total_wanted_done
+                if remaining_bytes <= 0:
+                    eta = 0  # Download complete
+                elif status.download_rate > 0:
+                    eta = int(remaining_bytes / status.download_rate)
+                else:
+                    eta = None  # Can't calculate ETA with zero download rate
+            elif state_str in ["finished", "seeding"]:
+                eta = 0  # Already complete
+            elif state_str == "checking":
+                eta = None  # Can't estimate during checking
+        except Exception as e:
+            logging.error(f"Error calculating ETA for torrent {torrent_id}: {e}")
+            eta = None
         
         info = TorrentInfo(
             id=torrent_id,
@@ -145,7 +163,8 @@ async def list_torrents() -> List[TorrentInfo]:
             upload_speed=status.upload_rate / 1024,  # Convert to KB/s
             state=state_str,
             total_size=status.total_wanted,
-            downloaded=status.total_wanted_done
+            downloaded=status.total_wanted_done,
+            eta_seconds=eta
         )
         result.append(info)
     
@@ -172,46 +191,6 @@ async def open_downloads():
     if not success:
         raise HTTPException(status_code=500, detail="Failed to open downloads folder")
     return {"message": "Downloads folder opened successfully"}
-
-@app.post("/api/torrent/{torrent_id}/pause")
-async def pause_torrent(torrent_id: str):
-    """Pause a specific torrent."""
-    if torrent_id not in active_torrents:
-        raise HTTPException(status_code=404, detail="Torrent not found")
-    
-    handle = active_torrents[torrent_id]
-    logging.info(f"Pausing torrent {torrent_id}, current state: {handle.status().state}")
-    handle.pause()
-    # Force an immediate pause
-    handle.flush_cache()
-    logging.info(f"Torrent {torrent_id} paused, new state: {handle.status().state}")
-    return {"message": "Torrent paused successfully"}
-
-@app.post("/api/torrent/{torrent_id}/resume")
-async def resume_torrent(torrent_id: str):
-    """Resume a specific torrent."""
-    if torrent_id not in active_torrents:
-        raise HTTPException(status_code=404, detail="Torrent not found")
-    
-    handle = active_torrents[torrent_id]
-    logging.info(f"Resuming torrent {torrent_id}, current state: {handle.status().state}")
-    handle.resume()
-    logging.info(f"Torrent {torrent_id} resumed, new state: {handle.status().state}")
-    return {"message": "Torrent resumed successfully"}
-
-@app.post("/api/torrent/pause-all")
-async def pause_all_torrents():
-    """Pause all active torrents."""
-    for handle in active_torrents.values():
-        handle.pause()
-    return {"message": "All torrents paused successfully"}
-
-@app.post("/api/torrent/resume-all")
-async def resume_all_torrents():
-    """Resume all active torrents."""
-    for handle in active_torrents.values():
-        handle.resume()
-    return {"message": "All torrents resumed successfully"}
 
 def main():
     """Entry point for the application."""

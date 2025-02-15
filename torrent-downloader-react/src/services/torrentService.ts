@@ -6,9 +6,11 @@ export interface TorrentInfo {
   name: string;
   progress: number;
   download_speed: number;
+  upload_speed: number;
   state: string;
   total_size: number;
   downloaded: number;
+  eta_seconds: number | null;
 }
 
 export const torrentService = {
@@ -69,46 +71,6 @@ export const torrentService = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || 'Failed to open downloads folder');
-    }
-  },
-
-  async pauseTorrent(id: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/torrent/${id}/pause`, {
-      method: 'POST',
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to pause torrent');
-    }
-  },
-
-  async resumeTorrent(id: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/torrent/${id}/resume`, {
-      method: 'POST',
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to resume torrent');
-    }
-  },
-
-  async pauseAllTorrents(): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/torrent/pause-all`, {
-      method: 'POST',
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to pause all torrents');
-    }
-  },
-
-  async resumeAllTorrents(): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/torrent/resume-all`, {
-      method: 'POST',
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to resume all torrents');
     }
   },
 }; 
