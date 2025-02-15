@@ -14,45 +14,34 @@ A modern, user-friendly torrent downloader application built with React and Pyth
 
 Before installing, make sure you have the required system dependencies:
 
-### Windows
+### System Dependencies
+
+#### Windows
 - Python 3.8 or higher
 - Microsoft Visual C++ Redistributable (latest version)
-- Libtorrent:
-  ```bash
-  # Option 1: Using pip
-  pip install python-libtorrent
 
-  # Option 2: Using conda
-  conda install -c conda-forge libtorrent
-  ```
-
-### macOS
+#### macOS
 ```bash
-# Using Homebrew (recommended)
+# Required: Install libtorrent system package
 brew install libtorrent-rasterbar
-
-# Or using conda
-conda install -c conda-forge libtorrent
 ```
 
-### Linux (Ubuntu/Debian)
+#### Linux (Ubuntu/Debian)
 ```bash
+# Required: Install libtorrent system package
 sudo apt-get update
 sudo apt-get install python3-libtorrent
-
-# Or using conda
-conda install -c conda-forge libtorrent
 ```
 
-### Linux (Fedora)
+#### Linux (Fedora)
 ```bash
+# Required: Install libtorrent system package
 sudo dnf install rb_libtorrent-python3
-
-# Or using conda
-conda install -c conda-forge libtorrent
 ```
 
-### Using Conda (All Platforms)
+### Alternative Installation Methods
+
+#### Using Conda (All Platforms)
 If you're using Conda, you can install libtorrent in your environment:
 ```bash
 conda create -n torrent-env python=3.11
@@ -65,12 +54,16 @@ conda install -c conda-forge libtorrent
 ### Method 1: Using pip (Recommended)
 
 ```bash
-# 1. Install libtorrent (see Prerequisites section above)
+# 1. Install system dependencies (see Prerequisites section above)
 
-# 2. Install the package
+# 2. Create and activate a virtual environment (recommended)
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# 3. Install the package
 pip install torrent-downloader-react
 
-# 3. Run the application
+# 4. Run the application
 torrent-downloader-react
 ```
 
