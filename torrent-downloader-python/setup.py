@@ -10,7 +10,7 @@ else:
 
 setup(
     name="torrent-downloader-python",
-    version="1.1.0",
+    version="1.1.1",
     description='A Torrent Downloader with a graphical user interface built using Tkinter and libtorrent',
     author='Your Name',
     author_email='your_email@example.com',
