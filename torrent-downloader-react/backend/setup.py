@@ -12,7 +12,8 @@ setup(
     install_requires=[
         "fastapi>=0.109.0",
         "uvicorn>=0.27.0",
-        "pydantic>=2.0.0"
+        "pydantic>=2.0.0",
+        "python-libtorrent>=2.0.0"
     ],
     entry_points={
         "console_scripts": [
