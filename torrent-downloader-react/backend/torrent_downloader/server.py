@@ -75,17 +75,6 @@ DOWNLOAD_PATH = get_downloads_dir()
 session = lt.session()
 settings = session.get_settings()
 settings['listen_interfaces'] = '0.0.0.0:6881'
-settings['active_downloads'] = -1  # No limit
-settings['active_seeds'] = -1  # No limit
-settings['active_limit'] = -1  # No limit
-settings['auto_manage_interval'] = 1  # Check every second
-settings['active_tracker_limit'] = -1  # No limit
-settings['enable_outgoing_utp'] = True
-settings['enable_incoming_utp'] = True
-settings['announce_to_all_tiers'] = True
-settings['announce_to_all_trackers'] = True
-settings['aio_threads'] = 8  # Number of async I/O threads
-settings['checking_mem_usage'] = 128  # Memory usage for checking (in MB)
 session.apply_settings(settings)
 
 # Store active torrents
@@ -146,6 +135,8 @@ async def list_torrents() -> List[TorrentInfo]:
         elif status.state == lt.torrent_status.paused:
             state_str = "paused"
         
+        logging.debug(f"Torrent {torrent_id} state: {state_str} (raw state: {status.state})")
+        
         info = TorrentInfo(
             id=torrent_id,
             name=handle.name(),
@@ -189,9 +180,11 @@ async def pause_torrent(torrent_id: str):
         raise HTTPException(status_code=404, detail="Torrent not found")
     
     handle = active_torrents[torrent_id]
+    logging.info(f"Pausing torrent {torrent_id}, current state: {handle.status().state}")
     handle.pause()
     # Force an immediate pause
     handle.flush_cache()
+    logging.info(f"Torrent {torrent_id} paused, new state: {handle.status().state}")
     return {"message": "Torrent paused successfully"}
 
 @app.post("/api/torrent/{torrent_id}/resume")
@@ -201,7 +194,9 @@ async def resume_torrent(torrent_id: str):
         raise HTTPException(status_code=404, detail="Torrent not found")
     
     handle = active_torrents[torrent_id]
+    logging.info(f"Resuming torrent {torrent_id}, current state: {handle.status().state}")
     handle.resume()
+    logging.info(f"Torrent {torrent_id} resumed, new state: {handle.status().state}")
     return {"message": "Torrent resumed successfully"}
 
 @app.post("/api/torrent/pause-all")
