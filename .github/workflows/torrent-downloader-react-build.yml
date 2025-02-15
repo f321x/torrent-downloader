@@ -8,7 +8,6 @@ on:
 
 jobs:
   test-frontend:
-    if: contains(github.event.head_commit.modified, 'torrent-downloader-react/') || contains(github.event.head_commit.added, 'torrent-downloader-react/')
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -33,7 +32,6 @@ jobs:
       run: npm run build
 
   test-backend:
-    if: contains(github.event.head_commit.modified, 'torrent-downloader-react/') || contains(github.event.head_commit.added, 'torrent-downloader-react/')
     runs-on: ubuntu-latest
     strategy:
       matrix:
