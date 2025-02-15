@@ -128,7 +128,7 @@ jobs:
         run: |
           brew install libtorrent-rasterbar
           python -m pip install --upgrade pip
-          pip install pyinstaller
+          pip install pyinstaller wheel setuptools build
           cd torrent-downloader-react/backend
           pip install -r requirements.txt
           cd ..
