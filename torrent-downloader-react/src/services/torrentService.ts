@@ -6,6 +6,7 @@ export interface TorrentInfo {
   name: string;
   progress: number;
   download_speed: number;
+  upload_speed: number;
   state: string;
   total_size: number;
   downloaded: number;

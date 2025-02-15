@@ -7,6 +7,7 @@ function App() {
   const [torrents, setTorrents] = useState<TorrentInfo[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({})
 
   // Fetch torrents periodically
   useEffect(() => {
@@ -71,41 +72,65 @@ function App() {
 
   const handlePauseTorrent = async (id: string) => {
     try {
+      setLoadingStates(prev => ({ ...prev, [id]: true }))
       await torrentService.pauseTorrent(id)
+      // Immediately update the UI
+      setTorrents(prev => prev.map(t => 
+        t.id === id ? { ...t, state: 'paused', download_speed: 0, upload_speed: 0 } : t
+      ))
       setError(null)
     } catch (err) {
       setError('Failed to pause torrent')
       console.error('Error pausing torrent:', err)
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [id]: false }))
     }
   }
 
   const handleResumeTorrent = async (id: string) => {
     try {
+      setLoadingStates(prev => ({ ...prev, [id]: true }))
       await torrentService.resumeTorrent(id)
+      // Immediately update the UI
+      setTorrents(prev => prev.map(t => 
+        t.id === id ? { ...t, state: 'downloading' } : t
+      ))
       setError(null)
     } catch (err) {
       setError('Failed to resume torrent')
       console.error('Error resuming torrent:', err)
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [id]: false }))
     }
   }
 
   const handlePauseAll = async () => {
     try {
+      setLoadingStates({ all: true })
       await torrentService.pauseAllTorrents()
+      // Immediately update the UI
+      setTorrents(prev => prev.map(t => ({ ...t, state: 'paused', download_speed: 0, upload_speed: 0 })))
       setError(null)
     } catch (err) {
       setError('Failed to pause all torrents')
       console.error('Error pausing all torrents:', err)
+    } finally {
+      setLoadingStates({})
     }
   }
 
   const handleResumeAll = async () => {
     try {
+      setLoadingStates({ all: true })
       await torrentService.resumeAllTorrents()
+      // Immediately update the UI
+      setTorrents(prev => prev.map(t => ({ ...t, state: 'downloading' })))
       setError(null)
     } catch (err) {
       setError('Failed to resume all torrents')
       console.error('Error resuming all torrents:', err)
+    } finally {
+      setLoadingStates({})
     }
   }
 
@@ -161,27 +186,31 @@ function App() {
                     <button 
                       onClick={() => handleResumeTorrent(torrent.id)}
                       className="resume-button"
+                      disabled={loadingStates[torrent.id] || loadingStates.all}
                     >
-                      Resume
+                      {loadingStates[torrent.id] ? 'Resuming...' : 'Resume'}
                     </button>
                   ) : (
                     <button 
                       onClick={() => handlePauseTorrent(torrent.id)}
                       className="pause-button"
+                      disabled={loadingStates[torrent.id] || loadingStates.all}
                     >
-                      Pause
+                      {loadingStates[torrent.id] ? 'Pausing...' : 'Pause'}
                     </button>
                   )}
                   <button 
                     onClick={() => handleRemoveTorrent(torrent.id)}
                     className="remove-button"
+                    disabled={loadingStates[torrent.id] || loadingStates.all}
                   >
                     Remove
                   </button>
                 </div>
               </div>
               <p>Status: {torrent.state}</p>
-              <p>Speed: {formatSpeed(torrent.download_speed)}</p>
+              <p>Download Speed: {formatSpeed(torrent.download_speed)}</p>
+              <p>Upload Speed: {formatSpeed(torrent.upload_speed)}</p>
               <p>Progress: {torrent.progress.toFixed(1)}%</p>
             </div>
             <div className="progress-bar">

@@ -75,6 +75,17 @@ DOWNLOAD_PATH = get_downloads_dir()
 session = lt.session()
 settings = session.get_settings()
 settings['listen_interfaces'] = '0.0.0.0:6881'
+settings['active_downloads'] = -1  # No limit
+settings['active_seeds'] = -1  # No limit
+settings['active_limit'] = -1  # No limit
+settings['auto_manage_interval'] = 1  # Check every second
+settings['active_tracker_limit'] = -1  # No limit
+settings['enable_outgoing_utp'] = True
+settings['enable_incoming_utp'] = True
+settings['announce_to_all_tiers'] = True
+settings['announce_to_all_trackers'] = True
+settings['aio_threads'] = 8  # Number of async I/O threads
+settings['checking_mem_usage'] = 128  # Memory usage for checking (in MB)
 session.apply_settings(settings)
 
 # Store active torrents
@@ -88,6 +99,7 @@ class TorrentInfo(BaseModel):
     name: str
     progress: float
     download_speed: float
+    upload_speed: float
     state: str
     total_size: int
     downloaded: int
@@ -139,6 +151,7 @@ async def list_torrents() -> List[TorrentInfo]:
             name=handle.name(),
             progress=status.progress * 100,
             download_speed=status.download_rate / 1024,  # Convert to KB/s
+            upload_speed=status.upload_rate / 1024,  # Convert to KB/s
             state=state_str,
             total_size=status.total_wanted,
             downloaded=status.total_wanted_done
@@ -177,6 +190,8 @@ async def pause_torrent(torrent_id: str):
     
     handle = active_torrents[torrent_id]
     handle.pause()
+    # Force an immediate pause
+    handle.flush_cache()
     return {"message": "Torrent paused successfully"}
 
 @app.post("/api/torrent/{torrent_id}/resume")
