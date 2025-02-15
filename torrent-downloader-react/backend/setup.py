@@ -6,18 +6,18 @@ with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "README.md"),
     long_description = f.read()
 
 setup(
-    name="torrent-downloader",
+    name="torrent-downloader-react",
     version="1.0.0",
     packages=find_packages(),
     install_requires=[
         "fastapi>=0.109.0",
         "uvicorn>=0.27.0",
-        "libtorrent>=2.0.0",
+        "python-libtorrent>=2.0.0",
         "pydantic>=2.0.0"
     ],
     entry_points={
         "console_scripts": [
-            "torrent-downloader=torrent_downloader.server:main",
+            "torrent-downloader-react=torrent_downloader.server:main",
         ],
     },
     author="Your Name",
