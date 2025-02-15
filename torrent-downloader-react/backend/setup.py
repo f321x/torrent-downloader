@@ -7,7 +7,7 @@ with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "README.md"),
 
 setup(
     name="torrent-downloader-react",
-    version="1.0.9",
+    version="1.0.10",
     packages=find_packages(),
     install_requires=[
         "fastapi>=0.109.0",
@@ -15,8 +15,7 @@ setup(
         "pydantic>=2.0.0",
         # Note: On macOS, you need to install libtorrent-rasterbar first:
         # brew install libtorrent-rasterbar
-        "libtorrent-python>=2.0.0; platform_system=='Darwin'",
-        "python-libtorrent>=2.0.0; platform_system!='Darwin'"
+        "libtorrent>=2.0.0"
     ],
     entry_points={
         "console_scripts": [
