@@ -143,4 +143,12 @@ async def open_downloads():
     success = open_folder(str(DOWNLOAD_PATH))
     if not success:
         raise HTTPException(status_code=500, detail="Failed to open downloads folder")
-    return {"message": "Downloads folder opened successfully"} 
+    return {"message": "Downloads folder opened successfully"}
+
+def main():
+    """Entry point for the application."""
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)
+
+if __name__ == "__main__":
+    main() 
