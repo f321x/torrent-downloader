@@ -46,13 +46,15 @@ def test_favicon(setup_static_dir):
     """Test that the favicon endpoint serves the favicon.ico file."""
     response = client.get("/favicon.ico")
     assert response.status_code == 200
-    assert "image/x-icon" in response.headers["content-type"]
+    # Accept both common MIME types for .ico files
+    assert any(mime in response.headers["content-type"] for mime in ["image/x-icon", "image/vnd.microsoft.icon"])
 
 def test_static_assets(setup_static_dir):
     """Test that static assets are served correctly."""
     response = client.get("/assets/test.js")
     assert response.status_code == 200
-    assert "application/javascript" in response.headers["content-type"]
+    # Accept both common MIME types for .js files
+    assert any(mime in response.headers["content-type"] for mime in ["application/javascript", "text/javascript"])
     assert b"console.log('test');" in response.content
 
 def test_get_downloads_path():

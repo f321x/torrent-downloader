@@ -73,7 +73,9 @@ DOWNLOAD_PATH = get_downloads_dir()
 
 # Initialize libtorrent session
 session = lt.session()
-session.listen_on(6881, 6891)
+settings = session.get_settings()
+settings['listen_interfaces'] = '0.0.0.0:6881'
+session.apply_settings(settings)
 
 # Store active torrents
 active_torrents: Dict[str, lt.torrent_handle] = {}
