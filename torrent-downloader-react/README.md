@@ -1,137 +1,87 @@
-# Torrent Downloader
+# Torrent Downloader Web App
 
-A modern, user-friendly torrent downloader application built with React and Python.
+A modern, full-featured torrent downloader with a clean React interface and Python backend.
+
+## Quick Start
+
+```bash
+pip install torrent-downloader-react
+torrent-downloader-react  # Opens in browser at http://127.0.0.1:8000
+```
+
+## System Requirements
+
+- Python 3.8+
+- Platform-specific dependencies:
+  - **Windows**: Microsoft Visual C++ Redistributable
+  - **macOS**: `brew install libtorrent-rasterbar`
+  - **Ubuntu/Debian**: `sudo apt-get install python3-libtorrent`
+  - **Fedora**: `sudo dnf install rb_libtorrent-python3`
 
 ## Features
 
-- Clean, modern user interface
-- Real-time download progress and speed monitoring
-- Cross-platform support (Windows, macOS, Linux)
-- Easy-to-use magnet link support
-- Dark mode support
+- Modern, responsive UI with dark mode
+- Real-time download progress monitoring
+- Download speed and ETA tracking
+- Easy magnet link handling
+- Cross-platform support
+- Concurrent downloads
 
-## Prerequisites
+## Usage
 
-Before installing, make sure you have the required system dependencies:
+1. Start the application:
+   ```bash
+   torrent-downloader-react
+   ```
+2. Open your browser at http://127.0.0.1:8000
+3. Paste a magnet link and click "Add Torrent"
+4. Monitor progress in the downloads list
+5. Access completed downloads in your downloads folder
 
-### System Dependencies
+## Alternative Installation: Using Conda
 
-#### Windows
-- Python 3.8 or higher
-- Microsoft Visual C++ Redistributable (latest version)
-
-#### macOS
-```bash
-# Required: Install libtorrent system package
-brew install libtorrent-rasterbar
-```
-
-#### Linux (Ubuntu/Debian)
-```bash
-# Required: Install libtorrent system package
-sudo apt-get update
-sudo apt-get install python3-libtorrent
-```
-
-#### Linux (Fedora)
-```bash
-# Required: Install libtorrent system package
-sudo dnf install rb_libtorrent-python3
-```
-
-### Alternative Installation Methods
-
-#### Using Conda (All Platforms)
-If you're using Conda, you can install libtorrent in your environment:
 ```bash
 conda create -n torrent-env python=3.11
 conda activate torrent-env
 conda install -c conda-forge libtorrent
-```
-
-## Installation
-
-### Method 1: Using pip (Recommended)
-
-```bash
-# 1. Install system dependencies (see Prerequisites section above)
-
-# 2. Create and activate a virtual environment (recommended)
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# 3. Install the package
 pip install torrent-downloader-react
-
-# 4. Run the application
-torrent-downloader-react
 ```
-
-The application will start and open in your default web browser at http://127.0.0.1:8000
-
-### Method 2: From Source
-
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/torrent-downloader.git
-cd torrent-downloader/torrent-downloader-react
-```
-
-2. Build the application:
-```bash
-cd backend
-python build.py
-```
-
-3. Install the built package:
-```bash
-pip install dist/torrent-downloader-*.whl
-```
-
-4. Run the application:
-```bash
-torrent-downloader
-```
-
-## Usage
-
-1. Start the application using one of the installation methods above
-2. The application will open in your default web browser
-3. Paste a magnet link into the input field
-4. Click "Add Torrent" to start downloading
-5. Monitor progress in the torrents list
-6. Click "Open Downloads" to view your downloaded files
 
 ## Development
 
 ### Frontend (React)
-
 ```bash
+# Install dependencies
 cd torrent-downloader-react
 npm install
+
+# Start development server
 npm run dev
 ```
 
 ### Backend (Python)
-
 ```bash
+# Install dependencies
 cd torrent-downloader-react/backend
 pip install -r requirements.txt
+
+# Start development server
 python -m torrent_downloader.server
 ```
 
-## Contributing
+## API Documentation
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+The backend provides a RESTful API:
+
+- `GET /api/torrents` - List all torrents
+- `POST /api/torrents` - Add new torrent
+- `DELETE /api/torrents/{id}` - Remove torrent
+- `GET /api/torrents/{id}/status` - Get torrent status
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License - See LICENSE file for details.
 
-## Disclaimer
+## Legal Notice
 
-This software is for downloading legal torrents only. The authors are not responsible for any misuse of this software.
+This software is intended for downloading legal torrents only. Users are responsible for compliance with applicable laws.
