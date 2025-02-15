@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import libtorrent as lt
 import os
@@ -10,26 +9,17 @@ from typing import Dict, List, Optional
 import time
 from pathlib import Path
 import subprocess
-import uvicorn
-import pkg_resources
 
 app = FastAPI()
 
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, this will be the hosted frontend URL
+    allow_origins=["http://localhost:5173"],  # Vite's default dev server
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Serve static files (the React frontend)
-try:
-    static_files_dir = pkg_resources.resource_filename(__name__, "static")
-    app.mount("/", StaticFiles(directory=static_files_dir, html=True), name="static")
-except Exception as e:
-    logging.warning(f"Could not mount static files: {e}")
 
 # Set up platform-specific paths
 def get_downloads_dir() -> Path:
@@ -153,23 +143,4 @@ async def open_downloads():
     success = open_folder(str(DOWNLOAD_PATH))
     if not success:
         raise HTTPException(status_code=500, detail="Failed to open downloads folder")
-    return {"message": "Downloads folder opened successfully"}
-
-def main():
-    # Set up logging
-    log_dir = Path.home() / ".torrent-downloader" / "logs"
-    log_dir.mkdir(parents=True, exist_ok=True)
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(log_dir / "torrent-downloader.log"),
-            logging.StreamHandler()
-        ]
-    )
-    
-    # Start the server
-    uvicorn.run(app, host="127.0.0.1", port=8000)
-
-if __name__ == "__main__":
-    main() 
+    return {"message": "Downloads folder opened successfully"} 
