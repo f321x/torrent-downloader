@@ -1,27 +1,20 @@
 from setuptools import setup, find_packages
 import sys
 
-# Define platform-specific dependencies
-if sys.platform == 'win32':
-    libtorrent_requires = ['libtorrent>=2.0.0']
-else:
-    # On macOS and Linux, libtorrent should be installed via system package manager
-    libtorrent_requires = []
-
 setup(
     name="torrent-downloader-python",
-    version="1.1.2",
+    version="1.1.3",
     description='A Torrent Downloader with a graphical user interface built using Tkinter and libtorrent',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     author='Steven Yan',
     author_email='yulong.yan@uqconnect.edu.au',
-    url='https://github.com/steven/torrent-downloader',
+    url='https://github.com/stevenbtc/torrent-downloader',
     packages=find_packages(),
     py_modules=['torrent_downloader_gui'],
     install_requires=[
-        'python-libtorrent'
-    ] + libtorrent_requires,
+        'libtorrent>=2.0.0'
+    ],
     entry_points={
         'console_scripts': [
             'torrent-downloader = torrent_downloader_gui:main'

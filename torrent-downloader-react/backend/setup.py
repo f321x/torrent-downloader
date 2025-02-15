@@ -7,14 +7,12 @@ with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "README.md"),
 
 setup(
     name="torrent-downloader-react",
-    version="1.1.2",
+    version="1.1.3",
     packages=find_packages(),
     install_requires=[
         "fastapi>=0.109.0",
         "uvicorn>=0.27.0",
         "pydantic>=2.0.0",
-        # Note: On macOS, you need to install libtorrent-rasterbar first:
-        # brew install libtorrent-rasterbar
         "libtorrent>=2.0.0",
         "pytest>=8.0.0",
         "httpx>=0.27.0"
@@ -24,17 +22,17 @@ setup(
             "torrent-downloader-react=torrent_downloader.server:main",
         ],
     },
-    author="Your Name",
-    author_email="your.email@example.com",
+    author="Steven Yan",
+    author_email="yulong.yan@uqconnect.edu.au",
     description="A modern, user-friendly torrent downloader application",
     long_description=long_description,
     long_description_content_type="text/markdown",
     keywords="torrent, downloader, p2p, bittorrent, libtorrent",
-    url="https://github.com/yourusername/torrent-downloader",
+    url="https://github.com/stevenbtc/torrent-downloader",
     project_urls={
-        "Bug Tracker": "https://github.com/yourusername/torrent-downloader/issues",
-        "Documentation": "https://github.com/yourusername/torrent-downloader#readme",
-        "Source Code": "https://github.com/yourusername/torrent-downloader",
+        "Bug Tracker": "https://github.com/stevenbtc/torrent-downloader/issues",
+        "Documentation": "https://github.com/stevenbtc/torrent-downloader#readme",
+        "Source Code": "https://github.com/stevenbtc/torrent-downloader",
     },
     classifiers=[
         "Development Status :: 4 - Beta",
