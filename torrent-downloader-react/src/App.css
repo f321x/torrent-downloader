@@ -186,3 +186,29 @@ button:disabled {
     color: #fecaca;
   }
 }
+
+.header-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.torrent-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pause-button {
+  background-color: #eab308;
+}
+
+.pause-button:hover:not(:disabled) {
+  background-color: #ca8a04;
+}
+
+.resume-button {
+  background-color: #22c55e;
+}
+
+.resume-button:hover:not(:disabled) {
+  background-color: #16a34a;
+}

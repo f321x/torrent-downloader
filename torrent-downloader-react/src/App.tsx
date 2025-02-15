@@ -69,6 +69,46 @@ function App() {
     }
   }
 
+  const handlePauseTorrent = async (id: string) => {
+    try {
+      await torrentService.pauseTorrent(id)
+      setError(null)
+    } catch (err) {
+      setError('Failed to pause torrent')
+      console.error('Error pausing torrent:', err)
+    }
+  }
+
+  const handleResumeTorrent = async (id: string) => {
+    try {
+      await torrentService.resumeTorrent(id)
+      setError(null)
+    } catch (err) {
+      setError('Failed to resume torrent')
+      console.error('Error resuming torrent:', err)
+    }
+  }
+
+  const handlePauseAll = async () => {
+    try {
+      await torrentService.pauseAllTorrents()
+      setError(null)
+    } catch (err) {
+      setError('Failed to pause all torrents')
+      console.error('Error pausing all torrents:', err)
+    }
+  }
+
+  const handleResumeAll = async () => {
+    try {
+      await torrentService.resumeAllTorrents()
+      setError(null)
+    } catch (err) {
+      setError('Failed to resume all torrents')
+      console.error('Error resuming all torrents:', err)
+    }
+  }
+
   const formatSpeed = (speed: number): string => {
     if (speed > 1024) {
       return `${(speed / 1024).toFixed(2)} MB/s`
@@ -80,7 +120,15 @@ function App() {
     <div className="container">
       <header>
         <h1>Torrent Downloader</h1>
-        <button onClick={handleOpenDownloads}>Open Downloads</button>
+        <div className="header-buttons">
+          <button onClick={handleOpenDownloads}>Open Downloads</button>
+          {torrents.length > 0 && (
+            <>
+              <button onClick={handlePauseAll}>Pause All</button>
+              <button onClick={handleResumeAll}>Resume All</button>
+            </>
+          )}
+        </div>
       </header>
 
       {error && (
@@ -108,12 +156,29 @@ function App() {
             <div className="torrent-info">
               <div className="torrent-header">
                 <h3>{torrent.name}</h3>
-                <button 
-                  onClick={() => handleRemoveTorrent(torrent.id)}
-                  className="remove-button"
-                >
-                  Remove
-                </button>
+                <div className="torrent-actions">
+                  {torrent.state === 'paused' ? (
+                    <button 
+                      onClick={() => handleResumeTorrent(torrent.id)}
+                      className="resume-button"
+                    >
+                      Resume
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => handlePauseTorrent(torrent.id)}
+                      className="pause-button"
+                    >
+                      Pause
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => handleRemoveTorrent(torrent.id)}
+                    className="remove-button"
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
               <p>Status: {torrent.state}</p>
               <p>Speed: {formatSpeed(torrent.download_speed)}</p>

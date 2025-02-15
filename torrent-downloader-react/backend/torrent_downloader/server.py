@@ -131,6 +131,8 @@ async def list_torrents() -> List[TorrentInfo]:
             state_str = "finished"
         elif status.state == lt.torrent_status.checking_files:
             state_str = "checking"
+        elif status.state == lt.torrent_status.paused:
+            state_str = "paused"
         
         info = TorrentInfo(
             id=torrent_id,
@@ -166,6 +168,40 @@ async def open_downloads():
     if not success:
         raise HTTPException(status_code=500, detail="Failed to open downloads folder")
     return {"message": "Downloads folder opened successfully"}
+
+@app.post("/api/torrent/{torrent_id}/pause")
+async def pause_torrent(torrent_id: str):
+    """Pause a specific torrent."""
+    if torrent_id not in active_torrents:
+        raise HTTPException(status_code=404, detail="Torrent not found")
+    
+    handle = active_torrents[torrent_id]
+    handle.pause()
+    return {"message": "Torrent paused successfully"}
+
+@app.post("/api/torrent/{torrent_id}/resume")
+async def resume_torrent(torrent_id: str):
+    """Resume a specific torrent."""
+    if torrent_id not in active_torrents:
+        raise HTTPException(status_code=404, detail="Torrent not found")
+    
+    handle = active_torrents[torrent_id]
+    handle.resume()
+    return {"message": "Torrent resumed successfully"}
+
+@app.post("/api/torrent/pause-all")
+async def pause_all_torrents():
+    """Pause all active torrents."""
+    for handle in active_torrents.values():
+        handle.pause()
+    return {"message": "All torrents paused successfully"}
+
+@app.post("/api/torrent/resume-all")
+async def resume_all_torrents():
+    """Resume all active torrents."""
+    for handle in active_torrents.values():
+        handle.resume()
+    return {"message": "All torrents resumed successfully"}
 
 def main():
     """Entry point for the application."""
