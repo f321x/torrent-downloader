@@ -1,11 +1,9 @@
-name: Create React Version Release
+name: Torrent Downloader React Release
 
 on:
   push:
     tags:
-      - 'v*'
-    paths:
-      - 'torrent-downloader-react/**'
+      - 'react-v*'
 
 jobs:
   create-release:
