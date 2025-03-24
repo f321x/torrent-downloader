@@ -84,8 +84,8 @@ function App() {
           message: '',
         })
       }, 3000)
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to add torrent'
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add torrent'
       setError(errorMessage)
       setAddingTorrent({
         status: 'error',
