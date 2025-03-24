@@ -3,7 +3,7 @@ import sys
 
 setup(
     name="torrent-downloader-python",
-    version="1.1.6",
+    version="1.1.9",
     description='A Torrent Downloader with a graphical user interface built using Tkinter and libtorrent',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
