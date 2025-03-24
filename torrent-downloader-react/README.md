@@ -1,31 +1,42 @@
 # Torrent Downloader Web App
 
-A modern, full-featured torrent downloader with a clean React interface and Python backend.
+A modern, full-featured torrent downloader with a clean React interface and FastAPI backend.
 
-## Quick Start
+![Torrent Downloader Web UI](https://github.com/stevenbtc/torrent-downloader/raw/main/torrent-downloader-react/screenshots/webapp_screenshot.png)
 
-```bash
-pip install torrent-downloader-react
-torrent-downloader-react  # Opens in browser at http://127.0.0.1:8000
-```
+## Features
+
+- **Sleek, Responsive UI**: Modern React interface that works on desktop and mobile
+- **Real-time Updates**: Live tracking of download progress, speed, and ETA
+- **Easy to Use**: Simple interface for adding and managing downloads
+- **Flexible Backend**: Powerful FastAPI server handling torrent operations
+- **Lightweight**: Minimal resource usage while maintaining full functionality
+- **Cross-platform**: Works on Windows, macOS, and Linux
 
 ## System Requirements
 
-- Python 3.8+
-- Platform-specific dependencies:
+- Python 3.8 or higher
+- Platform-specific libtorrent dependencies:
   - **Windows**: Microsoft Visual C++ Redistributable
   - **macOS**: `brew install libtorrent-rasterbar`
   - **Ubuntu/Debian**: `sudo apt-get install python3-libtorrent`
   - **Fedora**: `sudo dnf install rb_libtorrent-python3`
 
-## Features
+## Installation
 
-- Modern, responsive UI with dark mode
-- Real-time download progress monitoring
-- Download speed and ETA tracking
-- Easy magnet link handling
-- Cross-platform support
-- Concurrent downloads
+### From PyPI (Recommended)
+
+```bash
+pip install torrent-downloader-react
+```
+
+### From Source
+
+```bash
+git clone https://github.com/stevenbtc/torrent-downloader.git
+cd torrent-downloader/torrent-downloader-react/backend
+pip install -e .
+```
 
 ## Usage
 
@@ -34,32 +45,26 @@ torrent-downloader-react  # Opens in browser at http://127.0.0.1:8000
    torrent-downloader-react
    ```
 2. Open your browser at http://127.0.0.1:8000
-3. Paste a magnet link and click "Add Torrent"
-4. Monitor progress in the downloads list
-5. Access completed downloads in your downloads folder
+3. Paste a magnet link in the input field and click "Add Torrent"
+4. Monitor download progress in the list view
+5. Access completed downloads in your Downloads/TorrentDownloader folder
+6. Click "Open Download Folder" to view your downloaded files
 
-## Alternative Installation: Using Conda
+## Development Setup
 
-```bash
-conda create -n torrent-env python=3.11
-conda activate torrent-env
-conda install -c conda-forge libtorrent
-pip install torrent-downloader-react
-```
+### Frontend (React + Vite)
 
-## Development
-
-### Frontend (React)
 ```bash
 # Install dependencies
 cd torrent-downloader-react
 npm install
 
-# Start development server
+# Start development server (runs on http://localhost:5173)
 npm run dev
 ```
 
-### Backend (Python)
+### Backend (FastAPI)
+
 ```bash
 # Install dependencies
 cd torrent-downloader-react/backend
@@ -73,10 +78,25 @@ python -m torrent_downloader.server
 
 The backend provides a RESTful API:
 
-- `GET /api/torrents` - List all torrents
-- `POST /api/torrents` - Add new torrent
-- `DELETE /api/torrents/{id}` - Remove torrent
-- `GET /api/torrents/{id}/status` - Get torrent status
+- `POST /api/torrent/add` - Add new torrent
+- `GET /api/torrent/list` - List all active torrents
+- `DELETE /api/torrent/{torrent_id}` - Remove torrent
+- `GET /api/downloads/path` - Get downloads directory path
+- `POST /api/downloads/open` - Open downloads folder
+
+## Alternative Installation with Conda
+
+```bash
+# Create and activate conda environment
+conda create -n torrent-env python=3.11
+conda activate torrent-env
+
+# Install libtorrent dependency
+conda install -c conda-forge libtorrent
+
+# Install the package
+pip install torrent-downloader-react
+```
 
 ## License
 

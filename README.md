@@ -1,61 +1,77 @@
 # Torrent Downloader
 
-A modern torrent downloading solution offering two implementations:
+A modern, lightweight solution for downloading torrents, offering two distinct implementations:
 
-- 🌐 **Web Application** (`torrent-downloader-react`): Full-featured interface with real-time monitoring
-- 📟 **CLI Tool** (`torrent-downloader-python`): Lightweight command-line downloader
+- 🌐 **Web Application** (`torrent-downloader-react`): Full-featured React interface with FastAPI backend
+- 📟 **Desktop Application** (`torrent-downloader-python`): Native GUI built with Tkinter
 
-## Quick Start
+## Features
 
-### System Requirements
+### Web Application
+- Modern React UI with clean design
+- Real-time download progress tracking
+- Download speed, ETA, and file size information
+- Easy magnet link handling
+- Cross-platform compatibility
 
-- Python 3.8+
-- Platform-specific dependencies:
+### Desktop Application
+- Lightweight native interface
+- Simple, intuitive controls
+- Direct magnet link downloads
+- Progress monitoring and notifications
+- Low resource consumption
+
+## System Requirements
+
+- Python 3.8 or higher
+- Platform-specific libtorrent dependencies:
   - **Windows**: Microsoft Visual C++ Redistributable
   - **macOS**: `brew install libtorrent-rasterbar`
   - **Ubuntu/Debian**: `sudo apt-get install python3-libtorrent`
   - **Fedora**: `sudo dnf install rb_libtorrent-python3`
 
+## Quick Start
+
 ### Web Application
 
 ```bash
+# Install the package
 pip install torrent-downloader-react
-torrent-downloader-react  # Opens in browser at http://127.0.0.1:8000
+
+# Run the application (opens in browser at http://127.0.0.1:8000)
+torrent-downloader-react
 ```
 
-### CLI Tool
+### Desktop Application
 
 ```bash
+# Install the package
 pip install torrent-downloader-python
-torrent-downloader-python "magnet:?xt=urn:btih:..."
+
+# Launch the GUI application
+torrent-downloader-python
 ```
-
-## Features
-
-### Web Application
-- Modern UI with dark mode
-- Real-time progress monitoring
-- Easy magnet link handling
-- Cross-platform support
-
-### CLI Tool
-- Lightweight and efficient
-- Direct magnet link downloads
-- Simple command-line interface
 
 ## Development Setup
 
 ### Web Application
 ```bash
+# Set up frontend
 cd torrent-downloader-react
-npm install && npm run dev  # Frontend
-cd backend && pip install -r requirements.txt && python -m torrent_downloader.server  # Backend
+npm install
+npm run dev  # Starts development server at http://localhost:5173
+
+# Set up backend in a separate terminal
+cd torrent-downloader-react/backend
+pip install -r requirements.txt
+python -m torrent_downloader.server
 ```
 
-### CLI Tool
+### Desktop Application
 ```bash
 cd torrent-downloader-python
 pip install -e .
+python torrent_downloader_gui.py
 ```
 
 ## Project Structure
@@ -64,16 +80,22 @@ pip install -e .
 torrent-downloader/
 ├── torrent-downloader-react/   # Web application
 │   ├── src/                    # React frontend
-│   └── backend/                # Python backend
-└── torrent-downloader-python/  # CLI application
+│   └── backend/                # FastAPI backend
+└── torrent-downloader-python/  # Desktop application
+    └── torrent_downloader/     # Python package
 ```
 
-## Alternative Installation: Using Conda
+## Alternative Installation with Conda
 
 ```bash
+# Create and activate conda environment
 conda create -n torrent-env python=3.11
 conda activate torrent-env
+
+# Install libtorrent dependency
 conda install -c conda-forge libtorrent
+
+# Install desired package
 pip install torrent-downloader-react  # or torrent-downloader-python
 ```
 

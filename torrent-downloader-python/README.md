@@ -1,50 +1,74 @@
-# Torrent Downloader CLI
+# Torrent Downloader Desktop App
 
-A lightweight command-line torrent downloader focused on simplicity and efficiency.
+A lightweight, cross-platform torrent downloader with a native GUI built using Python and Tkinter.
 
-## Quick Start
+![Torrent Downloader GUI](https://github.com/stevenbtc/torrent-downloader/raw/main/torrent-downloader-python/screenshots/app_screenshot.png)
 
-```bash
-pip install torrent-downloader-python
-torrent-downloader-python "magnet:?xt=urn:btih:..."
-```
+## Features
+
+- Simple, intuitive graphical interface
+- Direct magnet link downloads
+- Real-time download progress tracking
+- Customizable download location
+- Automatic torrent metadata fetching
+- Cross-platform compatibility (Windows, macOS, Linux)
+- Low system resource consumption
 
 ## System Requirements
 
-- Python 3.8+
-- Platform-specific dependencies:
+- Python 3.8 or higher
+- Platform-specific libtorrent dependencies:
   - **Windows**: Microsoft Visual C++ Redistributable
   - **macOS**: `brew install libtorrent-rasterbar`
   - **Ubuntu/Debian**: `sudo apt-get install python3-libtorrent`
   - **Fedora**: `sudo dnf install rb_libtorrent-python3`
 
-## Features
+## Installation
 
-- Lightweight and efficient downloads
-- Simple command-line interface
-- Cross-platform support
-- Direct magnet link handling
-- Progress monitoring
+### From PyPI (Recommended)
+
+```bash
+pip install torrent-downloader-python
+```
+
+### From Source
+
+```bash
+git clone https://github.com/stevenbtc/torrent-downloader.git
+cd torrent-downloader/torrent-downloader-python
+pip install -e .
+```
 
 ## Usage
 
+### Launch the GUI
+
 ```bash
-# Basic usage with magnet link
-torrent-downloader-python "magnet:?xt=urn:btih:..."
-
-# Specify download directory
-torrent-downloader-python --output ~/Downloads "magnet:?xt=urn:btih:..."
-
-# Set download speed limit (in KB/s)
-torrent-downloader-python --speed-limit 1000 "magnet:?xt=urn:btih:..."
+# Start the application
+torrent-downloader-python
 ```
 
-## Alternative Installation: Using Conda
+### Using the Application
+
+1. Launch the application
+2. Paste a magnet link into the input field
+3. Click "Add Torrent" to begin downloading
+4. Monitor progress in the main window
+5. Access completed downloads through the "Open Download Folder" option
+
+## Alternative Installation with Conda
+
+For users who prefer Conda environments:
 
 ```bash
+# Create and activate conda environment
 conda create -n torrent-env python=3.11
 conda activate torrent-env
+
+# Install libtorrent dependency
 conda install -c conda-forge libtorrent
+
+# Install the package
 pip install torrent-downloader-python
 ```
 
@@ -52,11 +76,14 @@ pip install torrent-downloader-python
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/torrent-downloader.git
+git clone https://github.com/stevenbtc/torrent-downloader.git
 cd torrent-downloader/torrent-downloader-python
 
 # Install in development mode
 pip install -e .
+
+# Run the application
+python torrent_downloader_gui.py
 
 # Run tests
 python -m pytest tests/
