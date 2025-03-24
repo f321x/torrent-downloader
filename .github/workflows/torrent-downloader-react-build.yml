@@ -29,8 +29,21 @@ jobs:
     - name: Run linter
       run: npm run lint
     
-    - name: Build frontend
+    - name: Build package
       run: npm run build
+      
+    - name: Verify built assets
+      run: |
+        if [ ! -f "dist/assets/index-*.js" ] || [ ! -f "dist/assets/index-*.css" ]; then
+          echo "ERROR: Frontend assets not built correctly!"
+          exit 1
+        fi
+        echo "Frontend assets verified successfully!"
+    
+    - name: Copy assets to Python package
+      run: |
+        mkdir -p backend/torrent_downloader/static
+        cp -r dist/* backend/torrent_downloader/static/
 
   backend-tests:
     name: Backend Tests (Python ${{ matrix.python-version }})
