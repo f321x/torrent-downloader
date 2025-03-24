@@ -24,7 +24,7 @@ setup(
     },
     author="Steven Yan",
     author_email="yulong.yan@uqconnect.edu.au",
-    description="A modern, user-friendly torrent downloader application",
+    description="A high-performance, React-based BitTorrent client with an intuitive interface for seamless file downloading",
     long_description=long_description,
     long_description_content_type="text/markdown",
     keywords="torrent, downloader, p2p, bittorrent, libtorrent",

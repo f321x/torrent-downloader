@@ -1,4 +1,4 @@
-name: Torrent Downloader React Release
+name: React Release
 
 permissions:
   contents: write
