@@ -7,6 +7,13 @@ function App() {
   const [torrents, setTorrents] = useState<TorrentInfo[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [addingTorrent, setAddingTorrent] = useState<{
+    status: 'idle' | 'loading' | 'success' | 'error';
+    message: string;
+  }>({
+    status: 'idle',
+    message: '',
+  })
 
   // Fetch torrents periodically
   useEffect(() => {
@@ -36,13 +43,63 @@ function App() {
     
     setIsLoading(true)
     setError(null)
+    setAddingTorrent({
+      status: 'loading',
+      message: 'Connecting to trackers...',
+    })
     
     try {
-      await torrentService.addTorrent(magnetLink)
+      // First message after a short delay
+      const messageTimer1 = setTimeout(() => {
+        setAddingTorrent({
+          status: 'loading',
+          message: 'Fetching torrent metadata...',
+        })
+      }, 1000)
+
+      // Second message after another delay
+      const messageTimer2 = setTimeout(() => {
+        setAddingTorrent({
+          status: 'loading',
+          message: 'Waiting for peers...',
+        })
+      }, 3000)
+
+      const result = await torrentService.addTorrent(magnetLink)
+      
+      // Clear any pending timers to prevent message changes after success
+      clearTimeout(messageTimer1)
+      clearTimeout(messageTimer2)
+      
       setMagnetLink('')
-    } catch (err) {
-      setError('Failed to add torrent')
+      setAddingTorrent({
+        status: 'success',
+        message: result.message || 'Torrent added successfully!',
+      })
+      
+      // Reset status after showing success message
+      setTimeout(() => {
+        setAddingTorrent({
+          status: 'idle',
+          message: '',
+        })
+      }, 3000)
+    } catch (err: any) {
+      const errorMessage = err.message || 'Failed to add torrent'
+      setError(errorMessage)
+      setAddingTorrent({
+        status: 'error',
+        message: errorMessage,
+      })
       console.error('Error adding torrent:', err)
+      
+      // Reset status after showing error message
+      setTimeout(() => {
+        setAddingTorrent({
+          status: 'idle',
+          message: '',
+        })
+      }, 5000)
     } finally {
       setIsLoading(false)
     }
@@ -129,6 +186,23 @@ function App() {
           Add Torrent
         </button>
       </div>
+      
+      {addingTorrent.status !== 'idle' && (
+        <div className={`torrent-status-message ${addingTorrent.status}`}>
+          <div className="status-content">
+            {addingTorrent.status === 'loading' && (
+              <div className="loading-spinner"></div>
+            )}
+            {addingTorrent.status === 'success' && (
+              <div className="status-icon success-icon">✓</div>
+            )}
+            {addingTorrent.status === 'error' && (
+              <div className="status-icon error-icon">✕</div>
+            )}
+            <p>{addingTorrent.message}</p>
+          </div>
+        </div>
+      )}
 
       <div className="torrents-list">
         {torrents.map((torrent) => (

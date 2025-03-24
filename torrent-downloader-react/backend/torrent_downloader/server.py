@@ -98,8 +98,18 @@ class TorrentInfo(BaseModel):
 async def add_torrent(request: TorrentRequest):
     try:
         # Add the torrent
-        params = lt.parse_magnet_uri(request.magnet_link)
+        try:
+            params = lt.parse_magnet_uri(request.magnet_link)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid magnet link format: {str(e)}")
+        
         params.save_path = str(DOWNLOAD_PATH)
+        
+        # Check if torrent already exists with this hash
+        torrent_hash = str(params.info_hash)
+        if torrent_hash in active_torrents:
+            raise HTTPException(status_code=409, detail="A duplicate torrent is already being downloaded")
+        
         handle = session.add_torrent(params)
         
         # Wait for metadata
@@ -113,7 +123,13 @@ async def add_torrent(request: TorrentRequest):
         torrent_id = str(handle.info_hash())
         active_torrents[torrent_id] = handle
         
-        return {"id": torrent_id, "message": "Torrent added successfully"}
+        # Get the torrent name for the response
+        torrent_name = handle.status().name
+        
+        return {"id": torrent_id, "message": f"Torrent '{torrent_name}' added successfully"}
+    except HTTPException:
+        # Re-raise HTTP exceptions to preserve status codes
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

@@ -196,3 +196,102 @@ button:disabled {
   display: flex;
   gap: 0.5rem;
 }
+
+.torrent-status-message {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.torrent-status-message.loading {
+  background-color: #2563eb20;
+  border: 1px solid #2563eb;
+  color: #2563eb;
+}
+
+.torrent-status-message.success {
+  background-color: #16a34a20;
+  border: 1px solid #16a34a;
+  color: #16a34a;
+}
+
+.torrent-status-message.error {
+  background-color: #dc262620;
+  border: 1px solid #dc2626;
+  color: #dc2626;
+}
+
+.status-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid #2563eb40;
+  border-top: 3px solid #2563eb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.status-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: bold;
+}
+
+.success-icon {
+  background-color: #16a34a;
+  color: white;
+}
+
+.error-icon {
+  background-color: #dc2626;
+  color: white;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (prefers-color-scheme: dark) {
+  .torrent-status-message.loading {
+    background-color: #1e3a8a40;
+    border-color: #3b82f6;
+    color: #93c5fd;
+  }
+  
+  .torrent-status-message.success {
+    background-color: #14532d40;
+    border-color: #22c55e;
+    color: #86efac;
+  }
+  
+  .torrent-status-message.error {
+    background-color: #7f1d1d40;
+    border-color: #ef4444;
+    color: #fca5a5;
+  }
+  
+  .loading-spinner {
+    border-color: #93c5fd40;
+    border-top-color: #3b82f6;
+  }
+}

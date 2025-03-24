@@ -25,7 +25,20 @@ export const torrentService = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || 'Failed to add torrent');
+      // Check for specific error types
+      if (response.status === 408) {
+        throw new Error('Timeout waiting for torrent metadata. Please check your link or try again.');
+      }
+      
+      if (response.status === 409) {
+        throw new Error('This torrent is already being downloaded.');
+      }
+      
+      if (error.detail && error.detail.includes('Invalid magnet link format')) {
+        throw new Error('Invalid magnet link format. Please check and try again.');
+      }
+      
+      throw new Error(error.detail || 'Failed to add torrent. Please try again.');
     }
 
     return response.json();
