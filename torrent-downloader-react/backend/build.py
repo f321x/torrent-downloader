@@ -2,6 +2,10 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+import sys
+
+# Get the correct Python executable (the one running this script)
+PYTHON_EXECUTABLE = sys.executable
 
 def build_frontend():
     """Build the React frontend"""
@@ -34,7 +38,7 @@ def build_backend():
             shutil.rmtree(path)
     
     # Build the package
-    subprocess.run(["python", "setup.py", "sdist", "bdist_wheel"], cwd=backend_dir, check=True)
+    subprocess.run([PYTHON_EXECUTABLE, "setup.py", "sdist", "bdist_wheel"], cwd=backend_dir, check=True)
 
 def main():
     try:
