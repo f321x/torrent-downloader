@@ -9,7 +9,7 @@ setup(
     long_description_content_type='text/markdown',
     author='Steven Yan',
     author_email='yulong.yan@uqconnect.edu.au',
-    url='https://github.com/stevenbtc/torrent-downloader',
+    url='https://github.com/stevenyyan/torrent-downloader',
     packages=find_packages(),
     py_modules=['torrent_downloader_gui'],
     install_requires=[

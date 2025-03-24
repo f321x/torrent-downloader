@@ -2,7 +2,7 @@
 
 A lightweight, cross-platform torrent downloader with a native GUI built using Python and Tkinter.
 
-![Torrent Downloader GUI](https://github.com/stevenbtc/torrent-downloader/raw/main/torrent-downloader-python/screenshots/app_screenshot.png)
+![Torrent Downloader GUI](https://github.com/stevenyyan/torrent-downloader/raw/main/torrent-downloader-python/screenshots/app_screenshot.png)
 
 ## Features
 
@@ -34,7 +34,7 @@ pip install torrent-downloader-python
 ### From Source
 
 ```bash
-git clone https://github.com/stevenbtc/torrent-downloader.git
+git clone https://github.com/stevenyyan/torrent-downloader.git
 cd torrent-downloader/torrent-downloader-python
 pip install -e .
 ```
@@ -76,7 +76,7 @@ pip install torrent-downloader-python
 
 ```bash
 # Clone repository
-git clone https://github.com/stevenbtc/torrent-downloader.git
+git clone https://github.com/stevenyyan/torrent-downloader.git
 cd torrent-downloader/torrent-downloader-python
 
 # Install in development mode

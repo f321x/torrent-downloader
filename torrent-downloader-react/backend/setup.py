@@ -28,11 +28,11 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     keywords="torrent, downloader, p2p, bittorrent, libtorrent",
-    url="https://github.com/stevenbtc/torrent-downloader",
+    url="https://github.com/stevenyyan/torrent-downloader",
     project_urls={
-        "Bug Tracker": "https://github.com/stevenbtc/torrent-downloader/issues",
-        "Documentation": "https://github.com/stevenbtc/torrent-downloader#readme",
-        "Source Code": "https://github.com/stevenbtc/torrent-downloader",
+        "Bug Tracker": "https://github.com/stevenyyan/torrent-downloader/issues",
+        "Documentation": "https://github.com/stevenyyan/torrent-downloader#readme",
+        "Source Code": "https://github.com/stevenyyan/torrent-downloader",
     },
     classifiers=[
         "Development Status :: 4 - Beta",

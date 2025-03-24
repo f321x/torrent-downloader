@@ -2,7 +2,7 @@
 
 A modern, full-featured torrent downloader with a clean React interface and FastAPI backend.
 
-![Torrent Downloader Web UI](https://github.com/stevenbtc/torrent-downloader/raw/main/torrent-downloader-react/screenshots/webapp_screenshot.png)
+![Torrent Downloader Web UI](https://github.com/stevenyyan/torrent-downloader/raw/main/torrent-downloader-react/screenshots/webapp_screenshot.png)
 
 ## Features
 
@@ -33,7 +33,7 @@ pip install torrent-downloader-react
 ### From Source
 
 ```bash
-git clone https://github.com/stevenbtc/torrent-downloader.git
+git clone https://github.com/stevenyyan/torrent-downloader.git
 cd torrent-downloader/torrent-downloader-react/backend
 pip install -e .
 ```
