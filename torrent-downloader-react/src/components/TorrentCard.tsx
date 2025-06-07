@@ -19,6 +19,7 @@ export const TorrentCard = ({ torrent, onRemove, onPause, onResume }: TorrentCar
     setIsRemoving(true);
     try {
       await onRemove(torrent.id);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       setIsRemoving(false);
     }

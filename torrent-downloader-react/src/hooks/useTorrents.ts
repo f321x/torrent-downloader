@@ -80,6 +80,7 @@ export const useTorrents = (): UseTorrentsReturn => {
       await torrentService.removeTorrent(id);
       setTorrents(prev => prev.filter(t => t.id !== id));
       setError(null);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       const errorMessage = 'Failed to remove torrent';
       setError(errorMessage);

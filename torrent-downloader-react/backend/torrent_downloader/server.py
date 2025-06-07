@@ -141,7 +141,9 @@ async def list_torrents() -> List[TorrentInfo]:
         
         # Get the state string
         state_str = "unknown"
-        if status.state == lt.torrent_status.downloading:
+        if status.paused:
+            state_str = "paused"
+        elif status.state == lt.torrent_status.downloading:
             state_str = "downloading"
         elif status.state == lt.torrent_status.seeding:
             state_str = "seeding"
@@ -196,6 +198,26 @@ async def remove_torrent(torrent_id: str, delete_files: bool = False):
     del active_torrents[torrent_id]
     
     return {"message": "Torrent removed successfully"}
+
+@app.post("/api/torrent/{torrent_id}/pause")
+async def pause_torrent(torrent_id: str):
+    if torrent_id not in active_torrents:
+        raise HTTPException(status_code=404, detail="Torrent not found")
+    
+    handle = active_torrents[torrent_id]
+    handle.pause()
+    
+    return {"message": "Torrent paused successfully"}
+
+@app.post("/api/torrent/{torrent_id}/resume")
+async def resume_torrent(torrent_id: str):
+    if torrent_id not in active_torrents:
+        raise HTTPException(status_code=404, detail="Torrent not found")
+    
+    handle = active_torrents[torrent_id]
+    handle.resume()
+    
+    return {"message": "Torrent resumed successfully"}
 
 @app.get("/api/downloads/path")
 async def get_downloads_path():

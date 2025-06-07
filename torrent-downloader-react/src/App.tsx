@@ -142,13 +142,33 @@ function App() {
   }
 
   const handlePauseTorrent = async (id: string) => {
-    // TODO: Implement pause functionality in backend
-    toast.info('Pause functionality coming soon!')
+    try {
+      await torrentService.pauseTorrent(id)
+      toast.success('Torrent paused successfully')
+      setError(null)
+      // Immediate fetch to update torrent state
+      fetchTorrents()
+    } catch (err) {
+      const errorMessage = 'Failed to pause torrent'
+      setError(errorMessage)
+      toast.error(errorMessage)
+      console.error('Error pausing torrent:', err)
+    }
   }
 
   const handleResumeTorrent = async (id: string) => {
-    // TODO: Implement resume functionality in backend
-    toast.info('Resume functionality coming soon!')
+    try {
+      await torrentService.resumeTorrent(id)
+      toast.success('Torrent resumed successfully')
+      setError(null)
+      // Immediate fetch to update torrent state
+      fetchTorrents()
+    } catch (err) {
+      const errorMessage = 'Failed to resume torrent'
+      setError(errorMessage)
+      toast.error(errorMessage)
+      console.error('Error resuming torrent:', err)
+    }
   }
 
   return (

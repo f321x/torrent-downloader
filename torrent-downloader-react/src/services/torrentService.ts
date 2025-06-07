@@ -65,6 +65,26 @@ export const torrentService = {
     }
   },
 
+  async pauseTorrent(id: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/torrent/${id}/pause`, {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to pause torrent');
+    }
+  },
+
+  async resumeTorrent(id: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/torrent/${id}/resume`, {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to resume torrent');
+    }
+  },
+
   async getDownloadsPath(): Promise<string> {
     const response = await fetch(`${API_BASE_URL}/downloads/path`);
     
