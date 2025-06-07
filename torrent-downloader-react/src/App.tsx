@@ -1,9 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { Toaster, toast } from 'react-hot-toast'
 import { torrentService, TorrentInfo } from './services/torrentService'
+import { Header } from './components/Header'
+import { AddTorrent } from './components/AddTorrent'
+import { TorrentCard } from './components/TorrentCard'
+import { StatusMessage } from './components/StatusMessage'
 import './App.css'
 
 function App() {
-  const [magnetLink, setMagnetLink] = useState('')
   const [torrents, setTorrents] = useState<TorrentInfo[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -14,33 +18,43 @@ function App() {
     status: 'idle',
     message: '',
   })
+  const [pollInterval, setPollInterval] = useState(1000)
 
-  // Fetch torrents periodically
-  useEffect(() => {
-    const fetchTorrents = async () => {
-      try {
-        const data = await torrentService.listTorrents()
-        setTorrents(data)
-        setError(null)
-      } catch (err) {
-        setError('Failed to fetch torrents')
-        console.error('Error fetching torrents:', err)
-      }
+  // Smart polling - adjust interval based on activity
+  const updatePollInterval = useCallback((torrents: TorrentInfo[]) => {
+    const activeTorrents = torrents.filter(t => 
+      t.state === 'downloading' || t.state === 'checking'
+    )
+    
+    if (activeTorrents.length === 0) {
+      setPollInterval(5000) // Slow polling when idle
+    } else {
+      setPollInterval(1000) // Fast polling when active
     }
-
-    // Initial fetch
-    fetchTorrents()
-
-    // Set up polling
-    const interval = setInterval(fetchTorrents, 1000)
-
-    // Cleanup
-    return () => clearInterval(interval)
   }, [])
 
-  const handleAddTorrent = async () => {
-    if (!magnetLink.trim()) return
-    
+  // Fetch torrents with error handling and retry logic
+  const fetchTorrents = useCallback(async () => {
+    try {
+      const data = await torrentService.listTorrents()
+      setTorrents(data)
+      updatePollInterval(data)
+      setError(null)
+    } catch (err) {
+      console.error('Error fetching torrents:', err)
+      // Don't show error toast for fetch failures to avoid spam
+      setError('Connection lost. Retrying...')
+    }
+  }, [updatePollInterval])
+
+  // Initial fetch and polling setup
+  useEffect(() => {
+    fetchTorrents()
+    const interval = setInterval(fetchTorrents, pollInterval)
+    return () => clearInterval(interval)
+  }, [fetchTorrents, pollInterval])
+
+  const handleAddMagnet = async (magnetLink: string) => {
     setIsLoading(true)
     setError(null)
     setAddingTorrent({
@@ -49,7 +63,7 @@ function App() {
     })
     
     try {
-      // First message after a short delay
+      // Progressive loading messages
       const messageTimer1 = setTimeout(() => {
         setAddingTorrent({
           status: 'loading',
@@ -57,7 +71,6 @@ function App() {
         })
       }, 1000)
 
-      // Second message after another delay
       const messageTimer2 = setTimeout(() => {
         setAddingTorrent({
           status: 'loading',
@@ -67,22 +80,21 @@ function App() {
 
       const result = await torrentService.addTorrent(magnetLink)
       
-      // Clear any pending timers to prevent message changes after success
       clearTimeout(messageTimer1)
       clearTimeout(messageTimer2)
       
-      setMagnetLink('')
       setAddingTorrent({
         status: 'success',
         message: result.message || 'Torrent added successfully!',
       })
+
+      toast.success(`Added: ${result.message || 'Torrent added successfully!'}`)
       
-      // Reset status after showing success message
+      // Immediate fetch to show new torrent
+      fetchTorrents()
+      
       setTimeout(() => {
-        setAddingTorrent({
-          status: 'idle',
-          message: '',
-        })
+        setAddingTorrent({ status: 'idle', message: '' })
       }, 3000)
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to add torrent'
@@ -91,14 +103,11 @@ function App() {
         status: 'error',
         message: errorMessage,
       })
-      console.error('Error adding torrent:', err)
       
-      // Reset status after showing error message
+      toast.error(errorMessage)
+      
       setTimeout(() => {
-        setAddingTorrent({
-          status: 'idle',
-          message: '',
-        })
+        setAddingTorrent({ status: 'idle', message: '' })
       }, 5000)
     } finally {
       setIsLoading(false)
@@ -109,9 +118,12 @@ function App() {
     try {
       await torrentService.removeTorrent(id)
       setTorrents(torrents.filter(t => t.id !== id))
+      toast.success('Torrent removed successfully')
       setError(null)
     } catch (err) {
-      setError('Failed to remove torrent')
+      const errorMessage = 'Failed to remove torrent'
+      setError(errorMessage)
+      toast.error(errorMessage)
       console.error('Error removing torrent:', err)
     }
   }
@@ -119,119 +131,85 @@ function App() {
   const handleOpenDownloads = async () => {
     try {
       await torrentService.openDownloadsFolder()
+      toast.success('Downloads folder opened')
       setError(null)
     } catch (err) {
-      setError('Failed to open downloads folder')
+      const errorMessage = 'Failed to open downloads folder'
+      setError(errorMessage)
+      toast.error(errorMessage)
       console.error('Error opening downloads folder:', err)
     }
   }
 
-  const formatSpeed = (speed: number): string => {
-    if (speed > 1024) {
-      return `${(speed / 1024).toFixed(2)} MB/s`
-    }
-    return `${speed.toFixed(2)} KB/s`
+  const handlePauseTorrent = async (id: string) => {
+    // TODO: Implement pause functionality in backend
+    toast.info('Pause functionality coming soon!')
   }
 
-  const formatTime = (seconds: number | null): string => {
-    if (seconds === null) {
-      return 'Calculating...'
-    }
-    
-    if (seconds === 0) {
-      return 'Complete'
-    }
-    
-    if (seconds < 0 || isNaN(seconds)) {
-      return 'Unknown'
-    }
-    
-    const hours = Math.floor(seconds / 3600)
-    const minutes = Math.floor((seconds % 3600) / 60)
-    const remainingSeconds = Math.floor(seconds % 60)
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`
-    } else if (minutes > 0) {
-      return `${minutes}m ${remainingSeconds}s`
-    } else {
-      return `${remainingSeconds}s`
-    }
+  const handleResumeTorrent = async (id: string) => {
+    // TODO: Implement resume functionality in backend
+    toast.info('Resume functionality coming soon!')
   }
 
   return (
-    <div className="container">
-      <header>
-        <h1>Torrent Downloader</h1>
-        <div className="header-buttons">
-          <button onClick={handleOpenDownloads}>Open Downloads</button>
-        </div>
-      </header>
-
-      {error && (
-        <div className="error-message">
-          {error}
-        </div>
-      )}
-
-      <div className="input-section">
-        <input
-          type="text"
-          value={magnetLink}
-          onChange={(e) => setMagnetLink(e.target.value)}
-          placeholder="Enter magnet link..."
-          disabled={isLoading}
-        />
-        <button onClick={handleAddTorrent} disabled={isLoading || !magnetLink.trim()}>
-          Add Torrent
-        </button>
-      </div>
+    <div className="app">
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: 'var(--background-primary)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border-color)',
+          },
+        }}
+      />
       
-      {addingTorrent.status !== 'idle' && (
-        <div className={`torrent-status-message ${addingTorrent.status}`}>
-          <div className="status-content">
-            {addingTorrent.status === 'loading' && (
-              <div className="loading-spinner"></div>
-            )}
-            {addingTorrent.status === 'success' && (
-              <div className="status-icon success-icon">✓</div>
-            )}
-            {addingTorrent.status === 'error' && (
-              <div className="status-icon error-icon">✕</div>
-            )}
-            <p>{addingTorrent.message}</p>
-          </div>
-        </div>
-      )}
+      <Header 
+        torrents={torrents}
+        onOpenDownloads={handleOpenDownloads}
+      />
 
-      <div className="torrents-list">
-        {torrents.map((torrent) => (
-          <div key={torrent.id} className="torrent-item">
-            <div className="torrent-info">
-              <div className="torrent-header">
-                <h3>{torrent.name}</h3>
-                <div className="torrent-actions">
-                  <button 
-                    onClick={() => handleRemoveTorrent(torrent.id)}
-                    className="remove-button"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-              <p>Status: {torrent.state}</p>
-              <p>↓ {formatSpeed(torrent.download_speed)} | ↑ {formatSpeed(torrent.upload_speed)}</p>
-              <p>Progress: {torrent.progress.toFixed(1)}% | Time remaining: {formatTime(torrent.eta_seconds)}</p>
-            </div>
-            <div className="progress-bar">
-              <div 
-                className="progress" 
-                style={{ width: `${torrent.progress}%` }}
-              />
-            </div>
+      <main className="main-content">
+        {error && (
+          <div className="error-banner">
+            <p>{error}</p>
           </div>
-        ))}
-      </div>
+        )}
+
+        <AddTorrent
+          onAddMagnet={handleAddMagnet}
+          isLoading={isLoading}
+        />
+        
+        <StatusMessage
+          status={addingTorrent.status}
+          message={addingTorrent.message}
+        />
+
+        <div className="torrents-section">
+          {torrents.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-state-content">
+                <h3>No torrents yet</h3>
+                <p>Add a magnet link above to get started downloading torrents</p>
+              </div>
+            </div>
+          ) : (
+            <div className="torrents-grid">
+              {torrents.map((torrent) => (
+                <TorrentCard
+                  key={torrent.id}
+                  torrent={torrent}
+                  onRemove={handleRemoveTorrent}
+                  onPause={handlePauseTorrent}
+                  onResume={handleResumeTorrent}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
     </div>
   )
 }
