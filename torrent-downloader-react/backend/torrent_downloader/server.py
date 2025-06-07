@@ -75,10 +75,13 @@ DOWNLOAD_PATH = get_downloads_dir()
 session = lt.session()
 settings = session.get_settings()
 settings['listen_interfaces'] = '0.0.0.0:6881'
+settings['auto_manage_interval'] = 30  # Reduce auto-management frequency
+settings['auto_manage_startup'] = 60   # Delay auto-management on startup
 session.apply_settings(settings)
 
-# Store active torrents
+# Store active torrents and their pause state
 active_torrents: Dict[str, lt.torrent_handle] = {}
+paused_torrents: set = set()  # Track manually paused torrents
 
 class TorrentRequest(BaseModel):
     magnet_link: str
@@ -139,9 +142,13 @@ async def list_torrents() -> List[TorrentInfo]:
     for torrent_id, handle in active_torrents.items():
         status = handle.status()
         
+        # Enforce pause state for manually paused torrents
+        if torrent_id in paused_torrents and not status.paused:
+            handle.pause()  # Re-pause if libtorrent auto-resumed it
+        
         # Get the state string
         state_str = "unknown"
-        if status.paused:
+        if torrent_id in paused_torrents or status.paused:
             state_str = "paused"
         elif status.state == lt.torrent_status.downloading:
             state_str = "downloading"
@@ -196,6 +203,7 @@ async def remove_torrent(torrent_id: str, delete_files: bool = False):
     handle = active_torrents[torrent_id]
     session.remove_torrent(handle, 1 if delete_files else 0)
     del active_torrents[torrent_id]
+    paused_torrents.discard(torrent_id)  # Clean up pause state
     
     return {"message": "Torrent removed successfully"}
 
@@ -206,6 +214,7 @@ async def pause_torrent(torrent_id: str):
     
     handle = active_torrents[torrent_id]
     handle.pause()
+    paused_torrents.add(torrent_id)  # Track that this torrent was manually paused
     
     return {"message": "Torrent paused successfully"}
 
@@ -216,6 +225,7 @@ async def resume_torrent(torrent_id: str):
     
     handle = active_torrents[torrent_id]
     handle.resume()
+    paused_torrents.discard(torrent_id)  # Remove from manually paused set
     
     return {"message": "Torrent resumed successfully"}
 
