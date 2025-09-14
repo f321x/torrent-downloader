@@ -43,8 +43,9 @@ class TorrentDownloaderApp:
                                              command=self.open_download_folder)
         self.open_folder_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-        self.add_torrent_file_button = ttk.Button(self.toolbar, text="Add Torrent File", command=self.add_torrent_file_dialog)
-        self.add_torrent_file_button.pack(side=tk.LEFT, padx=5, pady=5)
+        # Unified add torrent button (magnet or file)
+        self.add_torrent_button = ttk.Button(self.toolbar, text="Add Torrent", command=self.open_add_dialog)
+        self.add_torrent_button.pack(side=tk.LEFT, padx=5, pady=5)
 
         self.help_button = ttk.Button(self.toolbar, text="Help", command=self.show_help)
         self.help_button.pack(side=tk.LEFT, padx=5, pady=5)
@@ -62,20 +63,9 @@ class TorrentDownloaderApp:
         self.main_container = ttk.Frame(master, padding="10")
         self.main_container.pack(fill=tk.BOTH, expand=True)
 
-        # Top frame for magnet link entry
-        self.frame_top = ttk.Frame(self.main_container)
-        self.frame_top.pack(fill=tk.X, pady=(0, 10))
-
-        self.label = ttk.Label(self.frame_top, text="Magnet Link:")
-        self.label.pack(side=tk.LEFT, padx=(0, 5))
-
-        self.magnet_entry = ttk.Entry(self.frame_top)
-        self.magnet_entry.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
-        self.magnet_entry.bind("<Return>", lambda _e: self.add_magnet())
-        self.magnet_entry.focus_set()
-
-        self.add_button = ttk.Button(self.frame_top, text="Add Magnet", command=self.add_magnet)
-        self.add_button.pack(side=tk.LEFT, padx=5)
+        # Space at top before tree (former magnet input area)
+        spacer = ttk.Frame(self.main_container, height=5)
+        spacer.pack(fill=tk.X)
 
         # Status frame with Treeview
         self.frame_status = ttk.Frame(self.main_container)
@@ -122,13 +112,12 @@ class TorrentDownloaderApp:
         help_text = f"""
 Torrent Downloader Help
 
-Add by Magnet Link:
-    1. Paste a magnet link in the text field
-    2. Click 'Add Magnet' (or press Enter)
-
-Add by .torrent File:
-    1. Click 'Add Torrent File'
-    2. Choose a .torrent file from your system
+Adding Torrents:
+    1. Click 'Add Torrent'
+    2. Paste a magnet link OR select a .torrent file (only one will be used)
+       - If you type a magnet link any chosen file is cleared
+       - If you pick a file any magnet text is cleared
+    3. Click 'Add'
 
 General:
     - Progress, speeds and peers update every {POLL_INTERVAL_MS/1000:.0f}s
@@ -154,8 +143,79 @@ https://github.com/yourusername/torrent_downloader
             logging.error("Failed to open downloads folder: %s", e)
             messagebox.showerror("Error", f"Could not open downloads folder:\n{e}")
 
-    def add_magnet(self):
-        magnet_link = self.magnet_entry.get().strip()
+    # --- Unified add dialog -------------------------------------------------
+    def open_add_dialog(self):
+        """Open a simple dialog to enter a magnet OR pick a .torrent file.
+        If both are supplied the most recently edited wins and the other is cleared.
+        """
+        dialog = tk.Toplevel(self.master)
+        dialog.title("Add Torrent")
+        dialog.transient(self.master)
+        dialog.grab_set()
+        dialog.resizable(False, False)
+
+        magnet_var = tk.StringVar()
+        file_var = tk.StringVar()
+
+        frame = ttk.Frame(dialog, padding=10)
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        ttk.Label(frame, text="Magnet Link:").pack(anchor=tk.W)
+        magnet_entry = ttk.Entry(frame, textvariable=magnet_var, width=70)
+        magnet_entry.pack(fill=tk.X, pady=(0, 8))
+        magnet_entry.focus_set()
+
+        ttk.Label(frame, text="Torrent File:").pack(anchor=tk.W)
+        file_row = ttk.Frame(frame)
+        file_row.pack(fill=tk.X)
+        file_entry = ttk.Entry(file_row, textvariable=file_var, width=55)
+        file_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        def browse():
+            filename = filedialog.askopenfilename(
+                title="Select .torrent file",
+                filetypes=[("Torrent files", "*.torrent"), ("All files", "*")],
+            )
+            if filename:
+                file_var.set(filename)
+                # Clear magnet if a file picked
+                if magnet_var.get():
+                    magnet_var.set("")
+
+        ttk.Button(file_row, text="Browse", command=browse).pack(side=tk.LEFT, padx=(5, 0))
+
+        # Mutual exclusion handlers
+        def on_magnet_change(*_):
+            if magnet_var.get():
+                file_var.set("")
+
+        magnet_var.trace_add('write', on_magnet_change)
+
+        # Action buttons
+        btn_frame = ttk.Frame(dialog, padding=(0, 5, 0, 10))
+        btn_frame.pack(fill=tk.X)
+
+        def do_add():
+            magnet = magnet_var.get().strip()
+            file_path = file_var.get().strip()
+            if magnet and file_path:
+                # Defensive: choose magnet (user typed after selecting file)
+                file_var.set("")
+                file_path = ""
+            if not magnet and not file_path:
+                messagebox.showwarning("Nothing to Add", "Provide a magnet link or choose a .torrent file.")
+                return
+            if magnet:
+                self._add_magnet_link(magnet, parent=dialog)
+            else:
+                self._add_torrent_file_from_path(file_path, parent=dialog)
+
+        ttk.Button(btn_frame, text="Add", command=do_add).pack(side=tk.RIGHT, padx=5)
+        ttk.Button(btn_frame, text="Cancel", command=dialog.destroy).pack(side=tk.RIGHT)
+
+        dialog.bind('<Return>', lambda _e: do_add())
+
+    def _add_magnet_link(self, magnet_link: str, parent: Optional[tk.Toplevel] = None):
         if not magnet_link:
             return
         if not magnet_link.startswith("magnet:?"):
@@ -167,20 +227,16 @@ https://github.com/yourusername/torrent_downloader
         try:
             self.manager.add_magnet(magnet_link)
             self._magnets.add(magnet_link)
-            self.magnet_entry.delete(0, tk.END)
+            if parent:
+                parent.destroy()
         except Exception as e:  # pragma: no cover - libtorrent edge
             logging.error("Failed to add magnet: %s", e)
             messagebox.showerror("Error", f"Failed to add magnet: {e}")
 
-    def add_torrent_file_dialog(self):
-        filename = filedialog.askopenfilename(
-            title="Select .torrent file",
-            filetypes=[("Torrent files", "*.torrent"), ("All files", "*")],
-        )
+    def _add_torrent_file_from_path(self, filename: str, parent: Optional[tk.Toplevel] = None):
         if not filename:
             return
         try:
-            # Peek at info hash to detect duplicates before adding
             import libtorrent as lt  # local import to ensure availability
             try:
                 info = lt.torrent_info(filename)
@@ -191,9 +247,10 @@ https://github.com/yourusername/torrent_downloader
             if info_hash in self._info_hashes:
                 messagebox.showinfo("Duplicate", "This torrent file (info hash) was already added.")
                 return
-            # Add through manager (recreates torrent_info internally but ok for simplicity)
             self.manager.add_torrent_file(filename)
             self._info_hashes.add(info_hash)
+            if parent:
+                parent.destroy()
         except FileNotFoundError:
             messagebox.showerror("Error", "Torrent file not found.")
         except Exception as e:  # pragma: no cover - defensive
