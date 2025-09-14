@@ -54,7 +54,7 @@ torrent-downloader-python
 2. Paste a magnet link into the input field
 3. Click "Add Torrent" to begin downloading
 4. Monitor progress in the main window
-5. Access completed downloads through the "Open Download Folder" option
+5. Access completed downloads through the "Open Downloads" button
 
 ## Alternative Installation with Conda
 
@@ -75,19 +75,20 @@ pip install torrent-downloader-python
 ## Development
 
 ```bash
-# Clone repository
 git clone https://github.com/stevenyyan/torrent-downloader.git
-cd torrent-downloader/torrent-downloader-python
-
-# Install in development mode
+cd torrent-downloader
 pip install -e .
 
-# Run the application
-python torrent_downloader_gui.py
+# Run the GUI
+python main.py
 
 # Run tests
-python -m pytest tests/
+pytest -q
 ```
+
+### Adding New Functionality
+
+When extending functionality, prefer adding logic to `torrent.py` (core) or `util.py` (helpers) rather than the GUI. Keep the GUI a thin layer.
 
 ## License
 
