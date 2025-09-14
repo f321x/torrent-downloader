@@ -14,7 +14,7 @@ Key concepts:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, Protocol, runtime_checkable
 import logging
 import os
 
@@ -34,6 +34,109 @@ class TorrentStatus:
 	num_peers: int
 	eta_seconds: Optional[int]  # None if not available
 	has_metadata: bool
+
+
+@runtime_checkable
+class _HandleLike(Protocol):  # pragma: no cover - structural typing helper
+	"""Subset of the libtorrent torrent_handle API we rely on.
+
+	This lets us unit test the translation logic with simple fakes instead of
+	requiring real libtorrent sessions (which would make tests slow & flaky).
+	"""
+	def status(self): ...  # noqa: D401,E701,F401
+	def has_metadata(self) -> bool: ...  # noqa: D401,E701,F401
+	def name(self) -> str: ...  # noqa: D401,E701,F401
+
+
+def _compute_progress(progress_field: float, total_done: int, total_wanted: int) -> float:
+	"""Return a sane 0..1 progress value.
+
+	libtorrent exposes both a floating ``progress`` attribute (0..1) and the
+	integer counters ``total_done`` & ``total_wanted``. In some circumstances –
+	especially directly after adding a torrent file – ``progress`` can report
+	an unexpectedly high value (e.g. pieces pre-marked as complete / padding).
+
+	We prefer a recomputed ratio when total_wanted is positive to mitigate
+	early jumps. Values are clamped to the [0,1] interval.
+	"""
+	if total_wanted > 0:
+		ratio = total_done / float(total_wanted)
+	else:  # defensive – avoid divide by zero; fall back to provided field
+		ratio = progress_field
+	# Clamp & normalise
+	if ratio < 0:
+		ratio = 0.0
+	elif ratio > 1:
+		ratio = 1.0
+	return float(ratio)
+
+
+def _compute_eta(total_done: int, total_wanted: int, download_rate: int) -> Optional[int]:
+	"""Estimate remaining seconds or return None if not computable.
+
+	We deliberately avoid huge oscillations: if the download rate is <= 0 or
+	remaining bytes are not positive, we return None.
+	"""
+	remaining = total_wanted - total_done
+	if download_rate <= 0 or remaining <= 0:
+		return None
+	# int truncation acts as floor which is fine for an ETA display
+	return int(remaining / download_rate)
+
+
+def _status_from_handle(handle: _HandleLike) -> TorrentStatus:
+	"""Translate a libtorrent ``torrent_handle`` into a ``TorrentStatus``.
+
+	Isolated for unit testing with simple fake objects.
+	"""
+	try:
+		s = handle.status()
+	except Exception as e:  # pragma: no cover - defensive
+		logging.warning("Failed to retrieve status for handle: %s", e)
+		raise
+
+	has_metadata = False
+	try:
+		has_metadata = handle.has_metadata()
+	except Exception:  # pragma: no cover - defensive
+		pass
+
+	if not has_metadata:
+		return TorrentStatus(
+			name="(retrieving metadata)",
+			progress=0.0,
+			download_rate=0,
+			upload_rate=0,
+			num_peers=getattr(s, 'num_peers', 0),
+			eta_seconds=None,
+			has_metadata=False,
+		)
+
+	# Safe attribute access with defaults (defensive if libtorrent changes)
+	total_wanted = getattr(s, 'total_wanted', 0) or 0
+	total_done = getattr(s, 'total_done', 0) or 0
+	progress_field = getattr(s, 'progress', 0.0) or 0.0
+	download_rate = getattr(s, 'download_rate', 0) or 0
+	upload_rate = getattr(s, 'upload_rate', 0) or 0
+	num_peers = getattr(s, 'num_peers', 0) or 0
+
+	progress = _compute_progress(progress_field, total_done, total_wanted)
+	eta_seconds = _compute_eta(total_done, total_wanted, download_rate)
+
+	try:
+		name = handle.name()
+	except Exception:  # pragma: no cover - defensive
+		name = "(unknown)"
+
+	return TorrentStatus(
+		name=name,
+		progress=progress,
+		download_rate=download_rate,
+		upload_rate=upload_rate,
+		num_peers=num_peers,
+		eta_seconds=eta_seconds,
+		has_metadata=True,
+	)
 
 
 class TorrentManager:
@@ -99,47 +202,20 @@ class TorrentManager:
 		statuses: List[TorrentStatus] = []
 		for handle in list(self._handles):
 			try:
-				s = handle.status()
-			except Exception as e:  # pragma: no cover - defensive
-				logging.warning("Failed to retrieve status for handle: %s", e)
+				statuses.append(_status_from_handle(handle))
+			except Exception:  # pragma: no cover - already logged in helper
 				continue
-
-			has_metadata = handle.has_metadata()
-			if not has_metadata:
-				statuses.append(TorrentStatus(
-					name="(retrieving metadata)",
-					progress=0.0,
-					download_rate=0,
-					upload_rate=0,
-					num_peers=s.num_peers,
-					eta_seconds=None,
-					has_metadata=False,
-				))
-				continue
-
-			remaining_bytes = s.total_wanted - s.total_done
-			eta_seconds = None
-			if s.download_rate > 0 and remaining_bytes > 0:
-				eta_seconds = int(remaining_bytes / s.download_rate)
-
-			try:
-				name = handle.name()
-			except Exception:  # pragma: no cover
-				name = "(unknown)"
-
-			statuses.append(TorrentStatus(
-				name=name,
-				progress=s.progress,  # already 0..1
-				download_rate=s.download_rate,
-				upload_rate=s.upload_rate,
-				num_peers=s.num_peers,
-				eta_seconds=eta_seconds,
-				has_metadata=True,
-			))
 		return statuses
 
 	@property
 	def download_dir(self) -> str:
 		return self._download_dir
 
-__all__ = ["TorrentManager", "TorrentStatus"]
+__all__ = [
+	"TorrentManager",
+	"TorrentStatus",
+	# Helper exports (documented for testing & potential reuse)
+	"_compute_progress",
+	"_compute_eta",
+	"_status_from_handle",
+]
