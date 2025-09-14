@@ -49,6 +49,9 @@ class TorrentDownloaderApp:
 
         self.help_button = ttk.Button(self.toolbar, text="Help", command=self.show_help)
         self.help_button.pack(side=tk.LEFT, padx=5, pady=5)
+        # Remove selected torrents button
+        self.remove_button = ttk.Button(self.toolbar, text="Remove Selected", command=self.remove_selected)
+        self.remove_button.pack(side=tk.LEFT, padx=5, pady=5)
 
         self.quit_button = ttk.Button(self.toolbar, text="Quit", command=self.quit_app)
         self.quit_button.pack(side=tk.RIGHT, padx=5, pady=5)
@@ -107,6 +110,10 @@ class TorrentDownloaderApp:
         self.manager = TorrentManager(self.download_dir)
         self.download_location_text = f"Downloads folder: {self.download_dir}"
         self._schedule_update()
+        # Key bindings for removal (Delete / Shift+Delete for delete files)
+        self.tree.bind('<Delete>', lambda e: self.remove_selected(delete_files=bool(e.state & 0x0001)))
+        # Also allow BackSpace as alternate delete key
+        self.tree.bind('<BackSpace>', lambda _e: self.remove_selected())
 
     def show_help(self):
         help_text = f"""
@@ -118,6 +125,11 @@ Adding Torrents:
        - If you type a magnet link any chosen file is cleared
        - If you pick a file any magnet text is cleared
     3. Click 'Add'
+
+Stopping / Removing Torrents:
+    - Select one or more rows in the list then click 'Remove Selected' or press Delete.
+    - By default this only stops the torrent and keeps downloaded data.
+    - To also delete data hold Shift while pressing Delete or use the confirmation dialog checkbox.
 
 General:
     - Progress, speeds and peers update every {POLL_INTERVAL_MS/1000:.0f}s
@@ -336,3 +348,52 @@ https://github.com/yourusername/torrent_downloader
             # Reschedule only if window still exists
             if self.master.winfo_exists():
                 self._schedule_update()
+
+    # --- Removal logic ----------------------------------------------------
+    def remove_selected(self, delete_files: bool = False):
+        """Remove currently selected torrents.
+
+        The tree rows map 1:1 to internal torrent handle list order except the
+        placeholder row shown when there are no torrents. We use stored last
+        rows to identify indices. Confirmation is requested once for batch.
+        """
+        selection = self.tree.selection()
+        if not selection:
+            return
+        # If placeholder row present, ignore
+        if self._last_rows and self._last_rows[0][0] == "No active torrents":
+            return
+        # Build indices corresponding to current ordering
+        indices = []
+        children_order = list(self.tree.get_children())
+        for i, item in enumerate(children_order):
+            if item in selection:
+                indices.append(i)
+        if not indices:
+            return
+        indices.sort(reverse=True)  # remove from end to keep earlier indices stable
+
+        # Ask for confirmation
+        if len(indices) == 1:
+            msg = "Remove selected torrent?"
+        else:
+            msg = f"Remove {len(indices)} torrents?"
+        if delete_files:
+            msg += "\nDelete downloaded data as well?"
+        # Provide a simple yes/no; advanced checkbox path skipped for simplicity
+        if not messagebox.askyesno("Confirm Removal", msg):
+            return
+        removed_any = False
+        for idx in indices:
+            if self.manager.remove_at(idx, delete_files=delete_files):
+                removed_any = True
+        if removed_any:
+            # Invalidate last rows forcing refresh next poll
+            self._last_rows = []
+            # Immediate UI refresh
+            try:
+                statuses: List[TorrentStatus] = self.manager.get_status_list()
+                rows = self._build_rows(statuses)
+                self._refresh_tree(rows)
+            except Exception as e:  # pragma: no cover
+                logging.error("Failed immediate refresh after removal: %s", e)

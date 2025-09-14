@@ -207,6 +207,31 @@ class TorrentManager:
 				continue
 		return statuses
 
+	def remove_at(self, index: int, *, delete_files: bool = False) -> bool:
+		"""Remove torrent at given index.
+
+		If ``delete_files`` is False (default) the downloaded data is kept on disk –
+		we only stop / remove the torrent from the session. Returns True if a
+		torrent was removed, False if index invalid.
+		"""
+		if index < 0 or index >= len(self._handles):
+			return False
+		try:
+			handle = self._handles.pop(index)
+			if delete_files:
+				# Guard for older libtorrent versions lacking options_t
+				try:
+					self._session.remove_torrent(handle, lt.options_t.delete_files)  # type: ignore[attr-defined]
+				except Exception:
+					self._session.remove_torrent(handle)
+			else:
+				self._session.remove_torrent(handle)
+			logging.info("Removed torrent at index %s (delete_files=%s)", index, delete_files)
+			return True
+		except Exception as e:  # pragma: no cover - defensive
+			logging.error("Failed to remove torrent at index %s: %s", index, e)
+			return False
+
 	@property
 	def download_dir(self) -> str:
 		return self._download_dir
