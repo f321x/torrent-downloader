@@ -1,25 +1,18 @@
-# Torrent Downloader
+# Torrent Downloader Desktop App
 
-A modern, lightweight solution for downloading torrents, offering two distinct implementations:
+A lightweight, cross-platform torrent downloader with a native GUI built using Python and Tkinter.
 
-- 🌐 **Web Application** (`torrent-downloader-react`): Full-featured React interface with FastAPI backend
-- 📟 **Desktop Application** (`torrent-downloader-python`): Native GUI built with Tkinter
+![Torrent Downloader GUI](https://github.com/stevenyyan/torrent-downloader/raw/main/torrent-downloader-python/screenshots/app_screenshot.png)
 
 ## Features
 
-### Web Application
-- Modern React UI with clean design
-- Real-time download progress tracking
-- Download speed, ETA, and file size information
-- Easy magnet link handling
-- Cross-platform compatibility
-
-### Desktop Application
-- Lightweight native interface
-- Simple, intuitive controls
+- Simple, intuitive graphical interface
 - Direct magnet link downloads
-- Progress monitoring and notifications
-- Low resource consumption
+- Real-time download progress tracking
+- Customizable download location
+- Automatic torrent metadata fetching
+- Cross-platform compatibility (Windows, macOS, Linux)
+- Low system resource consumption
 
 ## System Requirements
 
@@ -30,62 +23,42 @@ A modern, lightweight solution for downloading torrents, offering two distinct i
   - **Ubuntu/Debian**: `sudo apt-get install python3-libtorrent`
   - **Fedora**: `sudo dnf install rb_libtorrent-python3`
 
-## Quick Start
+## Installation
 
-### Web Application
+### From PyPI (Recommended)
 
 ```bash
-# Install the package
-pip install torrent-downloader-react
-
-# Run the application (opens in browser at http://127.0.0.1:8000)
-torrent-downloader-react
+pip install torrent-downloader-python
 ```
 
-### Desktop Application
+### From Source
 
 ```bash
-# Install the package
-pip install torrent-downloader-python
+git clone https://github.com/stevenyyan/torrent-downloader.git
+cd torrent-downloader/torrent-downloader-python
+pip install -e .
+```
 
-# Launch the GUI application
+## Usage
+
+### Launch the GUI
+
+```bash
+# Start the application
 torrent-downloader-python
 ```
 
-## Development Setup
+### Using the Application
 
-### Web Application
-```bash
-# Set up frontend
-cd torrent-downloader-react
-npm install
-npm run dev  # Starts development server at http://localhost:5173
-
-# Set up backend in a separate terminal
-cd torrent-downloader-react/backend
-pip install -r requirements.txt
-python -m torrent_downloader.server
-```
-
-### Desktop Application
-```bash
-cd torrent-downloader-python
-pip install -e .
-python torrent_downloader_gui.py
-```
-
-## Project Structure
-
-```
-torrent-downloader/
-├── torrent-downloader-react/   # Web application
-│   ├── src/                    # React frontend
-│   └── backend/                # FastAPI backend
-└── torrent-downloader-python/  # Desktop application
-    └── torrent_downloader/     # Python package
-```
+1. Launch the application
+2. Paste a magnet link into the input field
+3. Click "Add Torrent" to begin downloading
+4. Monitor progress in the main window
+5. Access completed downloads through the "Open Download Folder" option
 
 ## Alternative Installation with Conda
+
+For users who prefer Conda environments:
 
 ```bash
 # Create and activate conda environment
@@ -95,17 +68,26 @@ conda activate torrent-env
 # Install libtorrent dependency
 conda install -c conda-forge libtorrent
 
-# Install desired package
-pip install torrent-downloader-react  # or torrent-downloader-python
+# Install the package
+pip install torrent-downloader-python
 ```
 
-## Contributing
+## Development
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+```bash
+# Clone repository
+git clone https://github.com/stevenyyan/torrent-downloader.git
+cd torrent-downloader/torrent-downloader-python
+
+# Install in development mode
+pip install -e .
+
+# Run the application
+python torrent_downloader_gui.py
+
+# Run tests
+python -m pytest tests/
+```
 
 ## License
 
