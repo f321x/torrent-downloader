@@ -18,7 +18,7 @@ for directory in [app_data_dir, log_dir, cache_dir]:
     os.makedirs(directory, exist_ok=True)
 
 
-def main():
+def main() -> None:
     try:
         # Ensure logging configured (idempotent if already done by caller/tests)
         log_file = setup_logging()
@@ -29,6 +29,7 @@ def main():
         logging.debug(f"Executable: {sys.executable}")
 
         root = tk.Tk()
+        assert isinstance(root, tk.Tk), "root must be a tk.Tk instance"
         # Disable system menu bar on macOS
         if sys.platform == 'darwin':
             logging.info("Configuring macOS-specific settings")

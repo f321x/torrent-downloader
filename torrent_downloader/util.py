@@ -12,6 +12,7 @@ APP_NAME = "TorrentDownloader"
 
 def _expand(path: str) -> Path:
     """Expand env vars and user home in a path string to a Path object."""
+    assert isinstance(path, str) and path, "path must be a non-empty string"
     return Path(os.path.expandvars(os.path.expanduser(path)))
 
 
@@ -141,6 +142,7 @@ def format_size(size_bytes: int | float | str) -> str:
     Returns a string with one decimal place and unit among B, KB, MB, GB, TB.
     Existing tests rely on this specific rounding style.
     """
+    assert isinstance(size_bytes, (int, float, str)), "size_bytes must be a number or a string"
     try:  # Normalise input
         size = float(size_bytes)
     except Exception:
@@ -166,6 +168,7 @@ def ensure_app_dirs(create_downloads: bool = True) -> Dict[str, str]:
     -------
     dict mapping of {'app_data','log','cache','downloads?'} to their paths.
     """
+    assert isinstance(create_downloads, bool), "create_downloads must be a boolean"
     paths = {
         'app_data': get_app_data_dir(),
         'log': get_log_dir(),

@@ -39,9 +39,9 @@ class TorrentDownloaderApp:
         self.toolbar.pack(side=tk.TOP, fill=tk.X)
 
         # Add toolbar buttons
-        self.open_folder_button = ttk.Button(self.toolbar, text="Open Downloads",
-                                             command=self.open_download_folder)
-        self.open_folder_button.pack(side=tk.LEFT, padx=5, pady=5)
+        self.settings_button = ttk.Button(self.toolbar, text="Settings",
+                                              command=self.open_settings_dialog)
+        self.settings_button.pack(side=tk.LEFT, padx=5, pady=5)
 
         # Unified add torrent button (magnet or file)
         self.add_torrent_button = ttk.Button(self.toolbar, text="Add Torrent", command=self.open_add_dialog)
@@ -143,18 +143,47 @@ class TorrentDownloaderApp:
 
 
 
-    def open_download_folder(self):
-        """Open the downloads folder in the system file explorer."""
-        try:
-            if sys.platform == 'win32':  # type: ignore[attr-defined]
-                os.startfile(self.download_dir)  # noqa: PLW1510
-            elif sys.platform == 'darwin':
-                subprocess.Popen(["open", self.download_dir])
-            else:
-                subprocess.Popen(["xdg-open", self.download_dir])
-        except Exception as e:  # pragma: no cover - platform dependent
-            logging.error("Failed to open downloads folder: %s", e)
-            messagebox.showerror("Error", f"Could not open downloads folder:\n{e}")
+    def open_settings_dialog(self):
+        """Open a dialog to configure the download directory."""
+        dialog = tk.Toplevel(self.master)
+        dialog.title("Settings")
+        dialog.transient(self.master)
+        dialog.grab_set()
+        dialog.resizable(False, False)
+
+        frame = ttk.Frame(dialog, padding=10)
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        ttk.Label(frame, text="Download Directory:").pack(anchor=tk.W)
+
+        dir_var = tk.StringVar(value=self.download_dir)
+        dir_entry = ttk.Entry(frame, textvariable=dir_var, width=70)
+        dir_entry.pack(fill=tk.X, pady=(0, 8))
+
+        def browse():
+            new_dir = filedialog.askdirectory(mustexist=True, title="Select Download Directory")
+            if new_dir:
+                dir_var.set(new_dir)
+
+        ttk.Button(frame, text="Browse", command=browse).pack(anchor=tk.W)
+
+        btn_frame = ttk.Frame(dialog, padding=(0, 5, 0, 10))
+        btn_frame.pack(fill=tk.X)
+
+        def do_save():
+            new_dir = dir_var.get()
+            if new_dir and new_dir != self.download_dir:
+                self.save_download_dir(new_dir)
+                self.download_dir = new_dir
+                self.download_location_text = f"Downloads folder: {self.download_dir}"
+                self.manager.set_download_directory(new_dir)
+                messagebox.showinfo("Settings Saved", f"Download directory updated to:\n{new_dir}", parent=dialog)
+            dialog.destroy()
+
+        ttk.Button(btn_frame, text="Save", command=do_save).pack(side=tk.RIGHT, padx=5)
+        ttk.Button(btn_frame, text="Cancel", command=dialog.destroy).pack(side=tk.RIGHT)
+
+        dialog.bind('<Return>', lambda _e: do_save())
 
     # --- Unified add dialog -------------------------------------------------
     def open_add_dialog(self):
@@ -229,6 +258,7 @@ class TorrentDownloaderApp:
         dialog.bind('<Return>', lambda _e: do_add())
 
     def _add_magnet_link(self, magnet_link: str, parent: Optional[tk.Toplevel] = None):
+        assert isinstance(magnet_link, str) and magnet_link.startswith("magnet:?"), "magnet_link must be a valid magnet link"
         if not magnet_link:
             return
         if not magnet_link.startswith("magnet:?"):
@@ -247,6 +277,7 @@ class TorrentDownloaderApp:
             messagebox.showerror("Error", f"Failed to add magnet: {e}")
 
     def _add_torrent_file_from_path(self, filename: str, parent: Optional[tk.Toplevel] = None):
+        assert isinstance(filename, str) and filename, "filename must be a non-empty string"
         if not filename:
             return
         try:
@@ -282,12 +313,24 @@ class TorrentDownloaderApp:
 
     # Removed local format_size; use util.format_size
 
+    def save_download_dir(self, path: str):
+        """Saves the download directory to the config file."""
+        assert isinstance(path, str) and path, "path must be a non-empty string"
+        from . import config
+        config.save_download_directory(path)
+
     def _resolve_download_dir(self) -> str:
         """Determine and create downloads directory with fallback strategy."""
+        from . import config
+        download_dir = config.load_download_directory()
+        if download_dir:
+            os.makedirs(download_dir, exist_ok=True)
+            return download_dir
+
         download_dir = util.get_downloads_dir()
         try:
             os.makedirs(download_dir, exist_ok=True)
-            logging.info(f"Using download directory: {download_dir}")
+            logging.info(f"Using default download directory: {download_dir}")
             return download_dir
         except OSError as e:
             logging.error(f"Failed to create downloads directory: {e}")
@@ -302,6 +345,7 @@ class TorrentDownloaderApp:
 
     @staticmethod
     def _format_eta(seconds: Optional[int]) -> str:
+        assert isinstance(seconds, (int, type(None))), "seconds must be an integer or None"
         if seconds is None:
             return "N/A"
         m, sec = divmod(seconds, 60)
@@ -310,9 +354,12 @@ class TorrentDownloaderApp:
 
     @staticmethod
     def _shorten(name: str, max_len: int = MAX_NAME_LEN) -> str:
+        assert isinstance(name, str), "name must be a string"
+        assert isinstance(max_len, int), "max_len must be an integer"
         return name if len(name) <= max_len else name[: max_len - 3] + "..."
 
     def _build_rows(self, statuses: Sequence[TorrentStatus]) -> List[Tuple[str, str, str, str, str, str]]:
+        assert isinstance(statuses, Sequence), "statuses must be a sequence"
         if not statuses:
             return [("No active torrents", "", "", "", "", "")]
         rows: List[Tuple[str, str, str, str, str, str]] = []
@@ -329,6 +376,7 @@ class TorrentDownloaderApp:
         return rows
 
     def _refresh_tree(self, rows: Sequence[Tuple[str, str, str, str, str, str]]):
+        assert isinstance(rows, Sequence), "rows must be a sequence"
         # Only update if rows changed to reduce flicker / overhead
         if list(rows) == self._last_rows:
             return
@@ -387,6 +435,7 @@ class TorrentDownloaderApp:
         placeholder row shown when there are no torrents. We use stored last
         rows to identify indices. Confirmation is requested once for batch.
         """
+        assert isinstance(delete_files, bool), "delete_files must be a boolean"
         selection = self.tree.selection()
         if not selection:
             return

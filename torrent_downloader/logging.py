@@ -26,6 +26,7 @@ def setup_logging(level: int = logging.DEBUG) -> str:
     str
         Path to the log file used.
     """
+    assert isinstance(level, int), "level must be an integer"
     global _CONFIGURED, _LOG_FILE
     if _CONFIGURED and _LOG_FILE is not None:
         return _LOG_FILE
