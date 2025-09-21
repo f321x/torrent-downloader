@@ -30,3 +30,9 @@ Desktop.ini
 # Application specific
 *.log
 *.zip
+
+#test
+MagicMock
+
+# vibecoding
+GEMINI.md
