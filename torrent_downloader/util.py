@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import sys
 import os
 import logging
@@ -190,15 +188,3 @@ def ensure_app_dirs(create_downloads: bool = True) -> Dict[str, str]:
             Path(fb).mkdir(parents=True, exist_ok=True)
             paths['downloads'] = fb
     return paths
-
-
-__all__ = [
-    'get_app_data_dir',
-    'get_log_dir',
-    'get_cache_dir',
-    'get_downloads_dir',
-    'get_fallback_downloads_dir',
-    'format_size',
-    'ensure_app_dirs',
-]
-

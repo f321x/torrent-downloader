@@ -141,12 +141,18 @@ class TestTorrentManager(unittest.TestCase):
     @patch("os.path.exists")
     @patch("builtins.open", new_callable=mock_open)
     def test_load_state(self, mock_file, mock_exists, mock_lt):
-        """Test that session state and resume data are loaded correctly."""
+        """Test that session state and resume data are loaded correctly.
+
+        The implementation stores a list of resume data dictionaries which are
+        bencoded again before calling read_resume_data. So we emulate that by
+        returning a list with a single dictionary from the second bdecode call.
+        """
         mock_exists.side_effect = lambda path: path in [self.session_file, self.session_file + ".resume"]
 
         mock_session = MagicMock()
         mock_lt.session.return_value = mock_session
-        mock_lt.bdecode.side_effect = [{'a': 'b'}, [b'resume_data_payload']]
+        resume_dict = {'resume': 'data'}
+        mock_lt.bdecode.side_effect = [{'a': 'b'}, [resume_dict]]
         mock_lt.read_resume_data.return_value = MagicMock()
 
         manager = TorrentManager(self.download_dir, self.session_file)
@@ -159,7 +165,8 @@ class TestTorrentManager(unittest.TestCase):
 
         self.assertEqual(mock_lt.bdecode.call_count, 2)
         mock_session.load_state.assert_called_once_with({'a': 'b'})
-        mock_lt.read_resume_data.assert_called_once_with(b'resume_data_payload')
+        mock_lt.bencode.assert_called_once_with(resume_dict)
+        mock_lt.read_resume_data.assert_called_once_with(mock_lt.bencode.return_value)
         mock_session.add_torrent.assert_called_once_with(mock_lt.read_resume_data.return_value)
 
 if __name__ == '__main__':

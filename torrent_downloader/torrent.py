@@ -11,15 +11,12 @@ Key concepts:
    safely consume these without needing to import libtorrent directly.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import List, Optional, Protocol, runtime_checkable
 import logging
 import os
 
-import libtorrent as lt  # type: ignore
-
+import libtorrent as lt
 
 @dataclass
 class LoadedTorrentInfo:
@@ -214,8 +211,6 @@ class TorrentManager:
             'storage_mode': lt.storage_mode_t(2),  # Use sparse allocation
         }
 
-
-
     def _load_session_state(self):
         """Load session state from file if it exists."""
         self._handles = [] # Clear existing handles before loading
@@ -233,9 +228,10 @@ class TorrentManager:
                 with open(self._resume_file, 'rb') as f:
                     resume_data_list = lt.bdecode(f.read())
                 
-                for resume_data in resume_data_list:
-                    atp = lt.read_resume_data(resume_data)
-                    atp.save_path = self._download_dir # Ensure correct save path
+                for resume_data_dict in resume_data_list:
+                    resume_data_bytes = lt.bencode(resume_data_dict)
+                    atp = lt.read_resume_data(resume_data_bytes)
+                    atp.save_path = self._download_dir  # Ensure correct save path
                     handle = self._session.add_torrent(atp)
                     self._handles.append(handle)
                 logging.info(f"Loaded resume data for {len(resume_data_list)} torrents from {self._resume_file}")
@@ -252,28 +248,38 @@ class TorrentManager:
 
             # Save resume data for all torrents
             resume_data = []
-            # Request resume data for all torrents
-            self._session.post_torrent_updates() # Ensure all torrents are up-to-date
-            self._session.post_dht_stats() # Ensure DHT stats are up-to-date
-            self._session.post_session_stats() # Ensure session stats are up-to-date
+            valid_handles = [h for h in self._handles if h.is_valid()]
 
-            for h in self._handles:
-                if h.is_valid():
-                    h.save_resume_data()
+            if not valid_handles:
+                return
 
-            # Wait for resume data alerts
-            alerts = []
-            self._session.wait_for_alert(1000) # Wait for up to 1 second for alerts
-            alerts = self._session.pop_alerts()
+            # Request resume data for all valid torrents
+            outstanding_resume_data = len(valid_handles)
+            for h in valid_handles:
+                h.save_resume_data()
 
-            for a in alerts:
-                if isinstance(a, lt.save_resume_data_alert):
-                    resume_data.append(a.resume_data)
-            
+            # Wait for all resume data alerts (or failures)
+            while outstanding_resume_data > 0:
+                if not self._session.wait_for_alert(5000):  # 5 second timeout per alert
+                    logging.warning("Timeout waiting for resume data alerts")
+                    break
+
+                alerts = self._session.pop_alerts()
+                for alert in alerts:
+                    if isinstance(alert, lt.save_resume_data_alert):
+                        resume_data.append(alert.resume_data)
+                        outstanding_resume_data -= 1
+                    elif isinstance(alert, lt.save_resume_data_failed_alert):
+                        logging.warning(f"Failed to get resume data: {alert.message()}")
+                        outstanding_resume_data -= 1
+
+            # Save collected resume data
             if resume_data:
                 with open(self._resume_file, 'wb') as f:
                     f.write(lt.bencode(resume_data))
                 logging.info(f"Resume data for {len(resume_data)} torrents saved to {self._resume_file}")
+            else:
+                logging.warning("No resume data collected")
 
         except Exception as e:
             logging.error(f"Failed to save session or resume data: {e}")
@@ -395,12 +401,3 @@ class TorrentManager:
     @property
     def download_dir(self) -> str:
         return self._download_dir
-
-__all__ = [
-    "TorrentManager",
-    "TorrentStatus",
-    # Helper exports (documented for testing & potential reuse)
-    "_compute_progress",
-    "_compute_eta",
-    "_status_from_handle",
-]

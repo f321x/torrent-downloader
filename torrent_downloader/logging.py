@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import sys
 import os
@@ -60,6 +58,3 @@ def setup_logging(level: int = logging.DEBUG) -> str:
     _CONFIGURED = True
     _LOG_FILE = log_path
     return log_path
-
-
-__all__ = ["setup_logging"]
