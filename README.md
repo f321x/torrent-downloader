@@ -1,22 +1,25 @@
 # Torrent Downloader Desktop App
 
 A lightweight, cross-platform torrent downloader with a native GUI built using Python and Tkinter.
+Forked from https://github.com/stevenyyan/torrent-downloader, thanks to Steven Yan for the base code.
 
 ![Torrent Downloader GUI](https://github.com/stevenyyan/torrent-downloader/raw/main/torrent-downloader-python/screenshots/app_screenshot.png)
 
-## Features
+## Goals
 
+- Simple and readable code, making it easy to experiment with Bittorrent
 - Simple, intuitive graphical interface
-- Direct magnet link downloads
-- Real-time download progress tracking
-- Customizable download location
-- Automatic torrent metadata fetching
-- Cross-platform compatibility (Windows, macOS, Linux)
-- Low system resource consumption
+- Sufficient features for practical use
+- No external dependencies except for libtorrent
+
+## Warning
+
+Large parts of this codebase are vibecoded. I try to sanity check and force the llm to write unittests,
+however it's totally possible that some things are broken or don't make any sense at all.
 
 ## System Requirements
 
-- Python 3.8 or higher
+- Python 3.13 or higher
 - Platform-specific libtorrent dependencies:
   - **Windows**: Microsoft Visual C++ Redistributable
   - **macOS**: `brew install libtorrent-rasterbar`
@@ -25,17 +28,11 @@ A lightweight, cross-platform torrent downloader with a native GUI built using P
 
 ## Installation
 
-### From PyPI (Recommended)
-
-```bash
-pip install torrent-downloader-python
-```
-
 ### From Source
 
 ```bash
-git clone https://github.com/stevenyyan/torrent-downloader.git
-cd torrent-downloader/torrent-downloader-python
+git clone https://github.com/f321x/torrent-downloader.git
+cd torrent-downloader
 pip install -e .
 ```
 
@@ -45,7 +42,7 @@ pip install -e .
 
 ```bash
 # Start the application
-torrent-downloader-python
+torrent-downloader
 ```
 
 ### Using the Application
