@@ -1,26 +1,6 @@
-import types
+import unittest
 
 from torrent_downloader.torrent import _compute_progress, _compute_eta, _status_from_handle, TorrentStatus
-
-
-def test_compute_progress_basic():
-    # Normal ratio
-    assert _compute_progress(0.9, 50, 100) == 0.5
-    # Clamp above 1
-    assert _compute_progress(2.0, 150, 100) == 1.0
-    # Clamp below 0
-    assert _compute_progress(-0.5, -10, 100) == 0.0
-    # Fallback to field when total_wanted == 0
-    assert _compute_progress(0.25, 0, 0) == 0.25
-
-
-def test_compute_eta():
-    # Remaining 50 bytes @10 bytes/s => 5s
-    assert _compute_eta(50, 100, 10) == 5
-    # No rate => None
-    assert _compute_eta(50, 100, 0) is None
-    # Completed => None
-    assert _compute_eta(100, 100, 10) is None
 
 
 class FakeStatus:
@@ -51,23 +31,38 @@ class FakeHandle:
         return self._name
 
 
-def test_status_from_handle_no_metadata():
-    h = FakeHandle(has_meta=False, num_peers=3)
-    st = _status_from_handle(h)
-    assert isinstance(st, TorrentStatus)
-    assert st.has_metadata is False
-    assert st.progress == 0.0
-    assert st.num_peers == 0 or st.num_peers == 3  # depends if attr fetch succeeded
+class TestProgressEta(unittest.TestCase):
+    def test_compute_progress_basic(self):
+        self.assertEqual(_compute_progress(0.9, 50, 100), 0.5)
+        self.assertEqual(_compute_progress(2.0, 150, 100), 1.0)
+        self.assertEqual(_compute_progress(-0.5, -10, 100), 0.0)
+        self.assertEqual(_compute_progress(0.25, 0, 0), 0.25)
+
+    def test_compute_eta(self):
+        self.assertEqual(_compute_eta(50, 100, 10), 5)
+        self.assertIsNone(_compute_eta(50, 100, 0))
+        self.assertIsNone(_compute_eta(100, 100, 10))
+
+    def test_status_from_handle_no_metadata(self):
+        h = FakeHandle(has_meta=False, num_peers=3)
+        st = _status_from_handle(h)
+        self.assertIsInstance(st, TorrentStatus)
+        self.assertFalse(st.has_metadata)
+        self.assertEqual(st.progress, 0.0)
+        # num_peers may be 0 or 3 depending on getattr success, assert in set
+        self.assertIn(st.num_peers, {0, 3})
+
+    def test_status_from_handle_with_metadata(self):
+        h = FakeHandle(has_meta=True, name='file.iso', total_done=512, total_wanted=1024, download_rate=128, upload_rate=64, num_peers=5, progress=0.9)
+        st = _status_from_handle(h)
+        self.assertTrue(st.has_metadata)
+        self.assertAlmostEqual(st.progress, 0.5, places=9)
+        self.assertEqual(st.eta_seconds, (1024 - 512) // 128)
+        self.assertEqual(st.name, 'file.iso')
+        self.assertEqual(st.num_peers, 5)
+        self.assertEqual(st.download_rate, 128)
+        self.assertEqual(st.upload_rate, 64)
 
 
-def test_status_from_handle_with_metadata():
-    h = FakeHandle(has_meta=True, name='file.iso', total_done=512, total_wanted=1024, download_rate=128, upload_rate=64, num_peers=5, progress=0.9)
-    st = _status_from_handle(h)
-    assert st.has_metadata is True
-    # Recomputed progress: 512/1024 = 0.5
-    assert abs(st.progress - 0.5) < 1e-9
-    assert st.eta_seconds == (1024 - 512) // 128
-    assert st.name == 'file.iso'
-    assert st.num_peers == 5
-    assert st.download_rate == 128
-    assert st.upload_rate == 64
+if __name__ == '__main__':  # pragma: no cover
+    unittest.main()
