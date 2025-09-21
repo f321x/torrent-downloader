@@ -32,7 +32,7 @@ class TorrentDownloaderApp:
         self._magnets: set[str] = set()
         self._info_hashes: set[str] = set()  # track torrents added via file
         self._update_job: Optional[str] = None
-        self._last_rows: List[Tuple[str, str, str, str, str]] = []
+        self._last_rows: List[Tuple[str, str, str, str, str, str]] = []
 
         # Create a custom toolbar frame
         self.toolbar = ttk.Frame(master)
@@ -47,11 +47,15 @@ class TorrentDownloaderApp:
         self.add_torrent_button = ttk.Button(self.toolbar, text="Add Torrent", command=self.open_add_dialog)
         self.add_torrent_button.pack(side=tk.LEFT, padx=5, pady=5)
 
-        self.help_button = ttk.Button(self.toolbar, text="Help", command=self.show_help)
-        self.help_button.pack(side=tk.LEFT, padx=5, pady=5)
         # Remove selected torrents button
         self.remove_button = ttk.Button(self.toolbar, text="Remove Selected", command=self.remove_selected)
         self.remove_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.resume_button = ttk.Button(self.toolbar, text="Resume Selected", command=self.resume_selected)
+        self.resume_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.pause_button = ttk.Button(self.toolbar, text="Pause Selected", command=self.pause_selected)
+        self.pause_button.pack(side=tk.LEFT, padx=5, pady=5)
 
         self.quit_button = ttk.Button(self.toolbar, text="Quit", command=self.quit_app)
         self.quit_button.pack(side=tk.RIGHT, padx=5, pady=5)
@@ -76,7 +80,7 @@ class TorrentDownloaderApp:
 
         # Create Treeview
         self.tree = ttk.Treeview(self.frame_status,
-                                 columns=("name", "progress", "speed", "eta", "peers"),
+                                 columns=("name", "progress", "speed", "eta", "peers", "state"),
                                  show="headings")
 
         # Define column headings and widths
@@ -85,6 +89,7 @@ class TorrentDownloaderApp:
         self.tree.heading("speed", text="Speed")
         self.tree.heading("eta", text="ETA")
         self.tree.heading("peers", text="Peers")
+        self.tree.heading("state", text="State")
 
         # Set column widths
         self.tree.column("name", width=400, minwidth=200)
@@ -92,6 +97,7 @@ class TorrentDownloaderApp:
         self.tree.column("speed", width=200, minwidth=150)
         self.tree.column("eta", width=100, minwidth=80)
         self.tree.column("peers", width=80, minwidth=60)
+        self.tree.column("state", width=100, minwidth=80)
 
         # Add scrollbars
         vsb = ttk.Scrollbar(self.frame_status, orient="vertical", command=self.tree.yview)
@@ -107,7 +113,8 @@ class TorrentDownloaderApp:
 
         # Prepare download directory and torrent manager
         self.download_dir = self._resolve_download_dir()
-        self.manager = TorrentManager(self.download_dir)
+        session_file = os.path.join(util.get_cache_dir(), "session.dat")
+        self.manager = TorrentManager(self.download_dir, session_file)
         self.download_location_text = f"Downloads folder: {self.download_dir}"
         self._schedule_update()
         # Key bindings for removal (Delete / Shift+Delete for delete files)
@@ -115,32 +122,26 @@ class TorrentDownloaderApp:
         # Also allow BackSpace as alternate delete key
         self.tree.bind('<BackSpace>', lambda _e: self.remove_selected())
 
-    def show_help(self):
-        help_text = f"""
-Torrent Downloader Help
+        # Context menu
+        self.context_menu = tk.Menu(master, tearoff=0)
+        self.context_menu.add_command(label="Resume", command=self.resume_selected)
+        self.context_menu.add_command(label="Pause", command=self.pause_selected)
+        self.context_menu.add_separator()
+        self.context_menu.add_command(label="Remove", command=self.remove_selected)
+        self.context_menu.add_command(label="Remove and Delete Data", command=lambda: self.remove_selected(delete_files=True))
+        self.tree.bind("<Button-3>", self._show_context_menu)
 
-Adding Torrents:
-    1. Click 'Add Torrent'
-    2. Paste a magnet link OR select a .torrent file (only one will be used)
-       - If you type a magnet link any chosen file is cleared
-       - If you pick a file any magnet text is cleared
-    3. Click 'Add'
+    def _show_context_menu(self, event):
+        """Display the context menu at the cursor position."""
+        # Identify the item under the cursor
+        item = self.tree.identify_row(event.y)
+        if item:
+            # Select the item under the cursor if it's not already selected
+            if item not in self.tree.selection():
+                self.tree.selection_set(item)
+            self.context_menu.post(event.x_root, event.y_root)
 
-Stopping / Removing Torrents:
-    - Select one or more rows in the list then click 'Remove Selected' or press Delete.
-    - By default this only stops the torrent and keeps downloaded data.
-    - To also delete data hold Shift while pressing Delete or use the confirmation dialog checkbox.
 
-General:
-    - Progress, speeds and peers update every {POLL_INTERVAL_MS/1000:.0f}s
-    - Duplicate magnets or torrent files (same info hash) are ignored
-
-{self.download_location_text}
-
-For support, please visit:
-https://github.com/yourusername/torrent_downloader
-"""
-        messagebox.showinfo("Help", help_text)
 
     def open_download_folder(self):
         """Open the downloads folder in the system file explorer."""
@@ -270,6 +271,7 @@ https://github.com/yourusername/torrent_downloader
             messagebox.showerror("Error", f"Failed to add torrent file: {e}")
 
     def quit_app(self):
+        self.manager.save_state()
         if self._update_job is not None:
             try:
                 self.master.after_cancel(self._update_job)
@@ -310,23 +312,23 @@ https://github.com/yourusername/torrent_downloader
     def _shorten(name: str, max_len: int = MAX_NAME_LEN) -> str:
         return name if len(name) <= max_len else name[: max_len - 3] + "..."
 
-    def _build_rows(self, statuses: Sequence[TorrentStatus]) -> List[Tuple[str, str, str, str, str]]:
+    def _build_rows(self, statuses: Sequence[TorrentStatus]) -> List[Tuple[str, str, str, str, str, str]]:
         if not statuses:
-            return [("No active torrents", "", "", "", "")]
-        rows: List[Tuple[str, str, str, str, str]] = []
+            return [("No active torrents", "", "", "", "", "")]
+        rows: List[Tuple[str, str, str, str, str, str]] = []
         for st in statuses:
             if not st.has_metadata:
-                rows.append(("Downloading metadata...", "N/A", "N/A", "N/A", str(st.num_peers)))
+                rows.append(("Downloading metadata...", "N/A", "N/A", "N/A", str(st.num_peers), st.state))
                 continue
             progress = f"{st.progress * 100:.1f}%"
             d_rate = util.format_size(st.download_rate)
             u_rate = util.format_size(st.upload_rate)
             speed = f"↓{d_rate}/s ↑{u_rate}/s"
             eta_str = self._format_eta(st.eta_seconds)
-            rows.append((self._shorten(st.name), progress, speed, eta_str, str(st.num_peers)))
+            rows.append((self._shorten(st.name), progress, speed, eta_str, str(st.num_peers), st.state))
         return rows
 
-    def _refresh_tree(self, rows: Sequence[Tuple[str, str, str, str, str]]):
+    def _refresh_tree(self, rows: Sequence[Tuple[str, str, str, str, str, str]]):
         # Only update if rows changed to reduce flicker / overhead
         if list(rows) == self._last_rows:
             return
@@ -348,6 +350,34 @@ https://github.com/yourusername/torrent_downloader
             # Reschedule only if window still exists
             if self.master.winfo_exists():
                 self._schedule_update()
+
+    def pause_selected(self):
+        selection = self.tree.selection()
+        if not selection:
+            return
+        indices = []
+        children_order = list(self.tree.get_children())
+        for i, item in enumerate(children_order):
+            if item in selection:
+                indices.append(i)
+        if not indices:
+            return
+        for idx in indices:
+            self.manager.pause_at(idx)
+
+    def resume_selected(self):
+        selection = self.tree.selection()
+        if not selection:
+            return
+        indices = []
+        children_order = list(self.tree.get_children())
+        for i, item in enumerate(children_order):
+            if item in selection:
+                indices.append(i)
+        if not indices:
+            return
+        for idx in indices:
+            self.manager.resume_at(idx)
 
     # --- Removal logic ----------------------------------------------------
     def remove_selected(self, delete_files: bool = False):

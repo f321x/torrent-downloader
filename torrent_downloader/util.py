@@ -12,7 +12,7 @@ APP_NAME = "TorrentDownloader"
 
 def _expand(path: str) -> Path:
     """Expand env vars and user home in a path string to a Path object."""
-    return Path(os.path.expandvars(os.path.expanduser(path))).resolve()
+    return Path(os.path.expandvars(os.path.expanduser(path)))
 
 
 @lru_cache(maxsize=1)

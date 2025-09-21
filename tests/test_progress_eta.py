@@ -31,6 +31,8 @@ class FakeStatus:
         self.download_rate = kw.get('download_rate', 0)
         self.upload_rate = kw.get('upload_rate', 0)
         self.num_peers = kw.get('num_peers', 0)
+        self.state = kw.get('state', 'downloading')
+        self.paused = kw.get('paused', False)
 
 
 class FakeHandle:
