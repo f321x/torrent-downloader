@@ -18,11 +18,13 @@ from typing import List, Optional, Protocol, runtime_checkable
 import logging
 import os
 
-try:
-    import libtorrent as lt  # type: ignore
-except ImportError as e:  # pragma: no cover - handled at startup
-    logging.error("Failed to import libtorrent in torrent module: %s", e)
-    lt = None  # type: ignore
+import libtorrent as lt  # type: ignore
+
+
+@dataclass
+class LoadedTorrentInfo:
+    info_hash: str
+    magnet_link: Optional[str]
 
 
 @dataclass
@@ -185,6 +187,7 @@ class TorrentManager:
             raise RuntimeError("libtorrent library not available")
         self._download_dir = download_dir
         self._session_file = session_file
+        self._resume_file = session_file + ".resume"
 
         # Initialise the libtorrent session object.
         self._session = lt.session()
@@ -211,36 +214,75 @@ class TorrentManager:
             'storage_mode': lt.storage_mode_t(2),  # Use sparse allocation
         }
 
-        # Get handles to torrents loaded from the session state.
-        self._handles: List = self._session.get_torrents()
+
 
     def _load_session_state(self):
         """Load session state from file if it exists."""
+        self._handles = [] # Clear existing handles before loading
         if os.path.exists(self._session_file):
             try:
                 with open(self._session_file, 'rb') as f:
-                    # The session state is stored in a bencoded format.
                     data = lt.bdecode(f.read())
                     self._session.load_state(data)
                     logging.info(f"Session state loaded from {self._session_file}")
             except Exception as e:
                 logging.error(f"Failed to load session state: {e}")
 
+        if os.path.exists(self._resume_file):
+            try:
+                with open(self._resume_file, 'rb') as f:
+                    resume_data_list = lt.bdecode(f.read())
+                
+                for resume_data in resume_data_list:
+                    atp = lt.read_resume_data(resume_data)
+                    atp.save_path = self._download_dir # Ensure correct save path
+                    handle = self._session.add_torrent(atp)
+                    self._handles.append(handle)
+                logging.info(f"Loaded resume data for {len(resume_data_list)} torrents from {self._resume_file}")
+            except Exception as e:
+                logging.error(f"Failed to load resume data: {e}")
+
     def save_state(self):
         """Save the current session state to a file."""
         try:
+            # Save session state
             with open(self._session_file, 'wb') as f:
-                # Bencode the session state dictionary before writing to file.
                 f.write(lt.bencode(self._session.save_state()))
-                logging.info(f"Session state saved to {self._session_file}")
+            logging.info(f"Session state saved to {self._session_file}")
+
+            # Save resume data for all torrents
+            resume_data = []
+            # Request resume data for all torrents
+            self._session.post_torrent_updates() # Ensure all torrents are up-to-date
+            self._session.post_dht_stats() # Ensure DHT stats are up-to-date
+            self._session.post_session_stats() # Ensure session stats are up-to-date
+
+            for h in self._handles:
+                if h.is_valid():
+                    h.save_resume_data()
+
+            # Wait for resume data alerts
+            alerts = []
+            self._session.wait_for_alert(1000) # Wait for up to 1 second for alerts
+            alerts = self._session.pop_alerts()
+
+            for a in alerts:
+                if isinstance(a, lt.save_resume_data_alert):
+                    resume_data.append(a.resume_data)
+            
+            if resume_data:
+                with open(self._resume_file, 'wb') as f:
+                    f.write(lt.bencode(resume_data))
+                logging.info(f"Resume data for {len(resume_data)} torrents saved to {self._resume_file}")
+
         except Exception as e:
-            logging.error(f"Failed to save session state: {e}")
+            logging.error(f"Failed to save session or resume data: {e}")
 
     def add_magnet(self, magnet_uri: str):
         """Add a magnet URI to the session and track its handle."""
         assert isinstance(magnet_uri, str) and magnet_uri.startswith("magnet:?"), "magnet_uri must be a valid magnet link"
         # lt.add_magnet_uri() is asynchronous, it returns a handle immediately.
-        handle = lt.add_magnet_uri(self._session, magnet_uri, self._params)
+        handle = self._session.add_magnet_uri(magnet_uri, self._params)
         self._handles.append(handle)
         logging.debug("Added magnet URI: %s", magnet_uri)
         return handle
@@ -277,6 +319,22 @@ class TorrentManager:
     def get_torrents(self) -> List:
         """Return the list of torrent handles."""
         return self._handles
+
+    def get_loaded_torrents_info(self) -> List[LoadedTorrentInfo]:
+        """Return info about torrents loaded from the session state."""
+        info_list = []
+        for handle in self._handles:
+            if not handle.is_valid():
+                continue
+            info_hash = str(handle.info_hash())
+            magnet_link = None
+            try:
+                # This can fail for torrents added from files
+                magnet_link = lt.make_magnet_uri(handle)
+            except Exception:
+                pass
+            info_list.append(LoadedTorrentInfo(info_hash=info_hash, magnet_link=magnet_link))
+        return info_list
 
     def pause_at(self, index: int) -> bool:
         """Pause torrent at a given index."""

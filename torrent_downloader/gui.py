@@ -3,11 +3,10 @@ import tkinter as tk
 import logging
 import sys
 import os
-import subprocess
 from typing import List, Sequence, Tuple, Optional
 
 try:  # Early feedback if libtorrent missing – GUI exits cleanly
-    import libtorrent  # noqa: F401
+    import libtorrent as lt  # noqa: F401
 except ImportError as e:  # pragma: no cover - startup failure path
     logging.error("Failed to import libtorrent: %s", e)
     print('Error: libtorrent module not found. Install with: pip install python-libtorrent')
@@ -56,9 +55,6 @@ class TorrentDownloaderApp:
 
         self.pause_button = ttk.Button(self.toolbar, text="Pause Selected", command=self.pause_selected)
         self.pause_button.pack(side=tk.LEFT, padx=5, pady=5)
-
-        self.quit_button = ttk.Button(self.toolbar, text="Quit", command=self.quit_app)
-        self.quit_button.pack(side=tk.RIGHT, padx=5, pady=5)
 
         # Configure style
         self.style = ttk.Style()
@@ -116,6 +112,8 @@ class TorrentDownloaderApp:
         session_file = os.path.join(util.get_cache_dir(), "session.dat")
         self.manager = TorrentManager(self.download_dir, session_file)
         self.download_location_text = f"Downloads folder: {self.download_dir}"
+        self._sync_state_from_manager()
+        self.update_status()  # Initial population of the list
         self._schedule_update()
         # Key bindings for removal (Delete / Shift+Delete for delete files)
         self.tree.bind('<Delete>', lambda e: self.remove_selected(delete_files=bool(e.state & 0x0001)))
@@ -130,6 +128,14 @@ class TorrentDownloaderApp:
         self.context_menu.add_command(label="Remove", command=self.remove_selected)
         self.context_menu.add_command(label="Remove and Delete Data", command=lambda: self.remove_selected(delete_files=True))
         self.tree.bind("<Button-3>", self._show_context_menu)
+
+    def _sync_state_from_manager(self):
+        """Populate UI-level tracking sets from the torrent manager's state."""
+        loaded_torrents = self.manager.get_loaded_torrents_info()
+        for info in loaded_torrents:
+            if info.magnet_link:
+                self._magnets.add(info.magnet_link)
+            self._info_hashes.add(info.info_hash)
 
     def _show_context_menu(self, event):
         """Display the context menu at the cursor position."""
@@ -177,7 +183,6 @@ class TorrentDownloaderApp:
                 self.download_dir = new_dir
                 self.download_location_text = f"Downloads folder: {self.download_dir}"
                 self.manager.set_download_directory(new_dir)
-                messagebox.showinfo("Settings Saved", f"Download directory updated to:\n{new_dir}", parent=dialog)
             dialog.destroy()
 
         ttk.Button(btn_frame, text="Save", command=do_save).pack(side=tk.RIGHT, padx=5)
@@ -281,7 +286,6 @@ class TorrentDownloaderApp:
         if not filename:
             return
         try:
-            import libtorrent as lt  # local import to ensure availability
             try:
                 info = lt.torrent_info(filename)
             except Exception as e:  # pragma: no cover - parsing edge
